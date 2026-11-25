@@ -24,7 +24,7 @@ struct NestView: View {
                 }
                 EggView(species: species, wiggles: wiggles)
                     .frame(width: size * 0.6, height: size * 0.6)
-                    .offset(y: -size * 0.13)
+                    .offset(y: -size * 0.09)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }

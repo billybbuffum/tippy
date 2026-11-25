@@ -10,7 +10,9 @@ struct HomeView: View {
     @State private var reflecting: DayItem?
     @State private var showingWander = false
     @State private var hatching: PetItem?
-    @State private var isFront = false
+    /// Whether Home is the screen in front (nothing pushed over it). A plain
+    /// box, not observed: flipping it must not re-render Home mid-push.
+    @State private var front = FrontFlag()
 
     var body: some View {
         NavigationStack {
@@ -34,10 +36,10 @@ struct HomeView: View {
                 .padding()
             }
             .onAppear {
-                isFront = true
+                front.isFront = true
                 presentHatch()
             }
-            .onDisappear { isFront = false }
+            .onDisappear { front.isFront = false }
             .safeAreaInset(edge: .bottom) { actions }
             .navigationTitle("Tippy")
             .navigationBarTitleDisplayMode(.inline)
@@ -74,7 +76,7 @@ struct HomeView: View {
     /// check-in hatches the egg, then the reflection usually follows), so
     /// it plays as soon as she's back.
     private func presentHatch() {
-        guard isFront, hatching == nil, !showingLog, !showingSettings, reflecting == nil,
+        guard front.isFront, hatching == nil, !showingLog, !showingSettings, reflecting == nil,
               let id = wander.state.pendingHatch else { return }
         hatching = PetItem(id: id)
     }
@@ -126,6 +128,11 @@ struct HomeView: View {
         .padding(.vertical, 10)
         .background(.bar)
     }
+}
+
+/// A flag Home sets on appear and disappear without causing a re-render.
+final class FrontFlag {
+    var isFront = false
 }
 
 /// This week at a glance: a ring of the goal used, and the numbers, in

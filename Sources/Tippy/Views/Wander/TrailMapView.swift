@@ -83,10 +83,14 @@ struct TrailMapView: View {
                     .frame(width: 60, height: 60)
                     .position(x: feet.x, y: feet.y - 10)
             }
-            Color.clear
-                .frame(width: 1, height: 1)
-                .id("pet-anchor")
-                .position(layout.point(atStep: shownStep))
+            // Laid out (not positioned) at the pet's height, so scrollTo
+            // finds its real frame.
+            VStack(spacing: 0) {
+                Color.clear.frame(height: max(layout.point(atStep: shownStep).y - 1, 0))
+                Color.clear.frame(height: 2).id("pet-anchor")
+            }
+            .frame(width: 1)
+            .allowsHitTesting(false)
             pet(layout)
         }
     }

@@ -7,7 +7,9 @@ name: Build
 # their pushes happen elsewhere; same-repo PRs are already covered by push.
 on:
   push:
-    branches: ['**']
+    # Every branch except the two that only hold published output (the
+    # install page and the PR GIFs); building those would be pointless.
+    branches: ['**', '!gh-pages', '!pr-media']
   pull_request:
   workflow_dispatch:
 

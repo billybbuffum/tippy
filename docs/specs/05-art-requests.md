@@ -68,6 +68,23 @@ The alternates have `happy` and `thriving`. Add the rest so every pet reacts gen
 |---|---|---|
 | `Pet/fox-dusk.png` | 256 | The cinnamon fox as a visitor at dusk, sitting, friendly, with a soft lantern-lit palette. Clearly the same original fox as `fox-happy`, not Tipple's. |
 
+## 6. Nice to have: effects and touch-ups (wanted)
+
+The effects are species-independent, so they serve every current and future pet. Spec 03's movement plan uses
+them when they exist and skips them when they don't.
+
+| File | Size and frames | Durations (ms) | Use |
+|---|---|---|---|
+| `Animations/dust-puff.png` | 3 × 128 strip | 90, 90, 140 | A small puff under the pet on each landing (played once, not looped) |
+| `Animations/sparkle.png` | 4 × 128 strip | 120, 120, 120, 200 | Burst over a landmark as its find is revealed; a "!" glint in frame 2 (played once) |
+| `Animations/find-glow.png` | 4 × 128 strip | 650, 140, 140, 170 | A soft pulsing ring under the next node on the trail map (looped) |
+
+Touch-ups:
+- **`Pet/fox-dusk.png`:** add a warm lantern rim light or a small lantern beside the fox, so the dusk visit reads as a
+  moment and not just a palette swap.
+- **`Wander/area-pond-shore.png`, `Wander/area-reed-bed.png`:** optionally add a faint path that continues into
+  `area-willow-grove`. The map draws its own path layer either way.
+
 ## Priority
 
 1. `Camp/pond-background.png` and the 8 new decorations: these unblock the camp, the core loop she cares about most.
@@ -75,3 +92,4 @@ The alternates have `happy` and `thriving`. Add the rest so every pet reacts gen
 3. The Wander banners and node icons.
 4. The alternates' mood poses and idle loops, and the fox at dusk.
 5. The optional loops and the dusk background.
+6. The effects and touch-ups in section 6.

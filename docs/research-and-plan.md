@@ -1,221 +1,192 @@
-# Tippy: research notes and build plan
+# Tippy project plan
 
-Tippy is a personal, open-source, non-commercial alcohol-moderation app with a virtual pet,
-inspired by **Tipple: Alcohol Moderation Pet** (iOS, by Myrtle).
+**Goal:** Help her drink less by caring for a little pond world. Every honest check-in earns coins for decorating
+the camp and steps for her pet's wanders through the pond, reeds and woods, where eggs are waiting to be found,
+hatched and raised. The tracking stays quick and kind. The cuteness is the reason to come back.
 
-> Research caveat: the App Store, the developer's site (moderation.pet) and screensdesign.com
-> could not be opened directly from the research environment. Everything below comes from
-> search-engine summaries of those pages, plus comparable apps. Items marked *(unconfirmed)*
-> should be checked against the real app.
+**First release:** A free, playable loop from the first session:
+- log a day (about 30 seconds, skipping the optional prompt), earn coins and wander steps;
+- decorate the camp;
+- find and hatch a second egg within roughly the first week;
+- see a weekly recap (about two minutes).
 
----
+These are design targets to check on her phone.
 
-## 1. What Tipple is
+Background research on Tipple, reviews and comparable apps is in [`research.md`](./research.md). How the app is
+built is in [`architecture.md`](./architecture.md).
 
-| | |
-|---|---|
-| Name | Tipple: Alcohol Moderation Pet (App Store id 6762130998) |
-| Developer | Myrtle (also publishes "Tipple - Make the Change", an "accountability pet" app) |
-| Platform | iPhone only; Health & Fitness; rated 18+ |
-| Released | ~May 15, 2026 |
-| Ratings | 4.6★; counts vary by source and date (≈590–800) |
-| Business model | Free download, "Pro" subscription (yearly plan, 7-day free trial); one directory says it shows ads |
-| Tagline | "Drink less, live more, and find your Tipple balance" |
-| Positioning | Track, moderate and reduce drinking. Aimed at moderation, "damp" living or full sobriety; sober-curious users; Dry January / Sober October |
-| Tone | Non-judgmental and playful. Its site says it makes "moderation feel like a game, not a chore" |
+## What we keep from Tipple, and what we fix
 
-### Core loop (as far as can be confirmed)
+| Tipple | Tippy |
+| --- | --- |
+| A user-set weekly budget, daily logging, and a fox that reacts to staying on track | Same shape, with an original teal pond creature. The pet reacts gently and is never sad, sick or guilt-tripping |
+| Coins for hitting the target, spent on the fox's campsite | Coins for **every honest check-in**, with bonuses for drink-free days and weeks within the goal. A hard week still earns |
+| A prize wheel and camp upgrades | No randomness and nothing paid. Every reward is earned and visible |
+| Reviewers finished the camp in about a week and then had nothing to do | Three loops that keep going: decorating, **wandering to find eggs**, and **raising a growing collection of pets**. New areas and items can be added over time |
+| The same questions every day | One optional prompt from a rotating set. Answering it adds a wander step, and answers come back in the weekly recap |
 
-1. **Onboarding chat with a fox mascot** about your current drinking habits.
-2. **Set a goal**: a weekly target and a daily drinking limit.
-3. **Log drinks daily.** Logging "keeps the fox on track". Missing a day makes the fox
-   "let you know, gently" (a reminder, not a punishment).
-4. **Weekly progress tracker** with reward animations.
-5. **Coins** are earned for hitting the weekly target, plus **free spins** that award objects.
-6. **Spend coins upgrading the fox's camp.**
-7. **Savings calculator** that shows money saved by drinking less.
-8. **Chat feature** for writing out feelings *(reported by reviewers)*.
+## The world
 
-### What reviewers liked and disliked (use this as a design brief)
+**The camp** is home: the pond, the active pet, and the decorations she has placed. It's the Home screen, and
+the camp editor is one tap away.
 
-- 👍 Less judgmental and more upbeat than other apps; not loaded with "tasks, readings or assignments".
-- 👍 The chat helps with processing feelings.
-- 👎 **The reward loop runs dry.** The camp is fully upgraded after about a week, after which
-  coins pile up with nothing to spend them on and the camp stops changing.
-- 👎 It asks the same questions every day and gives no real insight.
-- 👎 The features feel thin for the subscription price, and "there are a ton of free drink trackers".
+**The Wander** is a trail that leads out from the pond through a series of areas: Pond Shore → Reed Bed →
+Willow Grove → Mossy Woods → Mushroom Glade → Meadow, with more added over time. The active pet walks it one step
+at a time:
 
-### Comparable apps to borrow ideas from
+| Earns a step | How often |
+| --- | --- |
+| Checking in a day (drinks or drink-free) | Once per date |
+| Answering the day's reflection prompt | Once per date |
 
-- **Reboo** (by Reframe): an axolotl hatched from an egg. Coins from each check-in build and
-  upgrade its pond. Offers a **6-week plan that steps weekly drinks down**, support for
-  alcohol-free breaks, and a chat for planning nights out or handling cravings. It includes a
-  clear **"not medical advice / heavy daily drinkers should consult a doctor before stopping"** warning.
-- **SoberPal**: a bear companion for cravings, with drink tracking and daily limits.
-- **DryDog**: a Tamagotchi-style streak pet that grows (abstinence-focused).
-- **Finch**: the best-known self-care pet; a good reference for a gentle, never-punishing pet.
-- **DrinkControl / DampDays**: standard-drink units, Apple Health sync, lock-screen widgets.
+Landmarks along the trail hold **eggs** (a few per area), **found decorations** (free items for the camp),
+small **coin pouches**, and the occasional **visitor**. One is an original cinnamon fox who appears at dusk
+after the first weekly recap, as a side story.
 
----
+**Eggs and pets:**
+- The first egg is given at onboarding and hatches after the first check-in into the teal pond creature.
+- Later eggs are found on the Wander and hatch after a few more check-ins in the camp's nest, wiggling as they
+  get close. The first found egg lands in roughly week one, then about one a week.
+- Hatched pets join the collection: the moth, turtle, seal and fox from the sprite pack, then new species as art
+  arrives. She chooses which pet is out in the camp. The active pet shows the mood poses; the others idle around the pond.
+- Pets grow with friendship hearts earned while they're out (later release).
 
-## 2. What you need to decide
+**Mood** reacts gently to how the week is going: thriving or happy when on pace, "okay" a bit over, a sleepy
+"concerned" further over, and "waiting" when today isn't logged after the reminder time. Weekly numbers are
+written neutrally, separately from the pet.
 
-### 2a. Platform: decided
+**No-guilt rules:**
+- Missed days, going over the goal and later edits never take away coins, steps, eggs, pets or decorations.
+- Nothing resets.
+- Returning after a gap gets a welcome and an offer to log today and yesterday.
 
-**Native SwiftUI iPhone app, built and distributed exactly like ChoreLock.** GitHub Actions builds the
-SwiftPM package with xtool on a macOS runner, signs it with the existing Apple Developer account, and publishes
-an over-the-air install page (`https://billybbuffum.github.io/tippy/`) that a registered iPhone installs from
-in Safari. No Mac or Xcode is needed. See the README for the one-time setup.
+## Product flow
 
-What this gives over the earlier web-app idea:
-- **Real local notifications** (`UserNotifications`) for the daily check-in reminder, with **no server**.
-- Home-screen and lock-screen **widgets** (WidgetKit extension + App Group) later.
-- Optional **Apple Health** logging of alcoholic beverages (HealthKit) later.
-- SwiftData persistence; optional iCloud/CloudKit backup later, as ChoreLock's household does.
+| Moment | Experience | Acceptance criteria |
+| --- | --- | --- |
+| First launch | The pet's egg greets her. Name it, give a typical week, choose a weekly goal, and optionally a cost per drink. The reminder is offered after the first save. | A first check-in is possible without reminder permission or an account. Tippy never sets the goal for her; it pre-fills her typical week and she picks. |
+| Camp (Home) | The active pet in the decorated camp, today's check-in action, the week's total against the goal, coins, and the next Wander landmark. | A recorded zero looks different from an unlogged day. |
+| Log a day | Today, yesterday or an earlier date. Record zero, or add drinks from presets with a custom amount and ABV. | Entries can be saved, edited and deleted, survive relaunch, and update totals immediately. Removing the last drink asks whether to mark the day drink-free or clear it. A failed save keeps the form. |
+| Reflect (optional) | After saving, one short prompt with Skip, such as "Which drink did you most enjoy?" or "What helped tonight?" | Saving never depends on answering. Answering adds a Wander step once per date. |
+| Rewards | Coins and a step animate onto the camp after saving. | Each award is earned once per date or week and is never revoked or duplicated by retries or edits. |
+| Decorate | Open the shop, buy an item, place it in a compatible spot. Move, swap or store items. | A real choice between affordable starter items in the first session. Moving and storing are free. |
+| Wander | Open the trail map: areas, the pet's position, landmarks ahead, and what was found. | Steps come only from the rules above. Landmarks are collected once. |
+| Hatch | An egg in the nest counts down in check-ins, then hatches with an animation, and the pet joins the collection. | Hatching survives relaunch. Choosing the active pet is free and instant. |
+| Weekly recap | When a week ends: total against that week's goal, drink-free days, coins (including the goal bonus), steps and finds, her reflection answers, and an optional "one thing to try next week". | Shown once for the latest finished week; older recaps live in history. Partial weeks are labelled. A goal change applies from the current week on and never rewrites past weeks. |
+| Return after a gap | A welcome, today and yesterday offered, nothing lost. | No queue of missed recaps. Reminders are opt-in with neutral text. |
 
-### 2b. Name and art (IP hygiene)
+## Economy (first release)
 
-For a private app for your wife, anything goes. Because this repo is **public and open source**, though:
-- Don't reuse Tipple's name, fox character art, camp art, screenshots or copy text. "Tippy" is close to
-  "Tipple", so consider a distinct name and an original pet (a different animal or a made-up creature) if
-  you ever share it more widely.
-- Use original art or CC0 assets (e.g. Kenney.nl), or draw simple SVGs. Copying *mechanics*
-  (log drinks → pet reacts → earn coins → decorate) is fine.
+| Earn | Coins |
+| --- | --- |
+| Check in a date (any amount) | 5 |
+| Drink-free day bonus | +3 |
+| Week within its goal (at recap) | +15 |
+| Coin pouch on the Wander | 5–10 |
 
-### 2c. Safety and tone
+Starter items cost 10–15, so the first check-ins already buy a real choice between three. Most items cost
+20–60, and showpieces 80–150. The first catalog has at least 12 items across lighting, plants, furnishings and
+pond details, starting from the sprite pack (lantern, mushroom, seashell, sprout, watering can) plus new art.
+Week two must still have things to want.
 
-- Show a short "not medical advice" note. Also warn that heavy daily drinkers shouldn't
-  stop suddenly without a doctor, because alcohol withdrawal can be dangerous. Link to a helpline
-  (US: SAMHSA 1-800-662-4357).
-- The pet should **never die, get sick or guilt-trip**. Its moods should range from "cozy/happy" to "a bit sleepy/concerned", with a gentle nudge.
-- Logging an over-limit day should still earn a check-in coin. Honesty is the habit being rewarded.
+Back-filled dates earn the same as same-day check-ins, for up to 7 days back, so a forgotten day isn't punished
+and old history can't be farmed.
 
----
+## Implementation plan
 
-## 3. MVP feature list
+Each step is a pull request with its own domain tests, smoke scenarios and seeds, following
+[`architecture.md`](./architecture.md).
 
-**Onboarding (about 5 screens, styled as a chat with the pet)**
-1. Hatch or name the pet.
-2. "How many drinks in a typical week?" (baseline)
-3. Weekly goal in standard drinks (suggest baseline −20–30%), plus optional drink-free-days target.
-4. Typical cost per drink (for the savings calculator).
-5. Reminder time for the daily local notification.
+### 1. Core loop (PR #3, then aligned with this plan)
 
-**Daily use**
-- **Quick log**: preset buttons (beer, glass of wine, cocktail, shot, seltzer) with editable size and ABV,
-  and a big **"No drinks today"** button. Drinks can be edited or deleted, and past days can be back-filled.
-- **Home screen**: the pet in its home, this week's progress ring (drinks used / budget), drink-free days
-  so far, coins, and the check-in streak.
-- **Gentle reminder** if today hasn't been logged.
+Already in PR #3:
+- the Journal domain (drinks, drink-free days, weeks, mood);
+- logging and back-filling;
+- history;
+- settings;
+- reminders;
+- JSON backup;
+- onboarding.
 
-**Progress**
-- Weekly bar chart of standard drinks per day; week-over-week trend.
-- Money saved vs baseline, approximate calories, drink-free day count.
-- Weekly recap card when the week rolls over: goal met? coins awarded; pet celebration animation.
+To align before it merges, so the stored format starts right:
+- **Edits:** edit drinks; removing the last drink asks "drink-free or clear?".
+- **Drink entries:** store the amount and unit as entered, plus an optional standard-drink override.
+- **Weekly goal:** each week keeps the goal it started with; changes apply from the current week on.
+- **Reflection:** the optional prompt after saving, with the answer stored per date.
+- **Onboarding:** pre-fill the goal with her typical week (no automatic cut), cost optional, reminder offered
+  after the first save.
+- **The pet:** use the sprite pack's mood poses for the teal pet (pixel-perfect scaling, idle animation) instead
+  of the drawn placeholder.
+- **Reduce Motion:** still poses.
 
-**Rewards (fix Tipple's biggest complaint)**
-- Coins: +1 per daily check-in, +bonus for a drink-free day, +big bonus for meeting the weekly goal.
-- Shop of decorations, outfits and pet food, with **a long, tiered catalog** and seasonal or rotating items so
-  there's always something to save for.
-- Pet growth stages unlocked by *weeks on target* (egg → baby → teen → adult), plus milestone badges.
-- Optional: a short reflection prompt that varies daily ("What helped today?") instead of the same questions.
+**Exit check:** zero days, multiple drinks, edits and back-fill survive relaunch. The pet shows the right sprite
+for each mood.
 
-**Plans (later)**
-- Optional step-down plan, like Reboo's 6 weeks (e.g. reduce the weekly budget by 1–2 drinks per week).
-- Optional "break" mode (e.g. a 30-day dry challenge).
+### 2. Rewards: coins and the weekly recap (new `TippyRewards` context)
 
-**Data and settings**
-- Everything stored on the device (SwiftData). No account, no server, no analytics.
-- **Export/import JSON backup** (deleting the app would otherwise wipe history).
-- Units: US standard drinks by default; UK units as an option.
+- An award ledger keyed by fact (`checkIn:<date>`, `drinkFree:<date>`, `weekGoal:<week>`, `pouch:<landmark>`), so
+  an award is recorded once and never revoked. The balance is earned minus spent.
+- The weekly recap screen, shown once per finished week, with the goal bonus awarded there.
 
----
+**Exit check:** retries, edits and relaunches never duplicate or remove coins. A seeded finished week shows its
+recap.
 
-## 4. Key logic
+### 3. Camp: shop and decorating
 
-### Standard drinks
+- A bundled catalog with stable item IDs, prices, art and compatible slots. Ownership is kept separate from placement.
+- Buying checks the balance and records the purchase in one atomic change. Placement uses tap-to-select spots,
+  with move, swap and store.
+- Seeds for a fresh camp and a furnished camp.
 
-```
-grams_alcohol  = volume_ml × (ABV% / 100) × 0.789
-us_std_drinks  = grams_alcohol / 14      // US standard drink = 14 g
-uk_units       = grams_alcohol / 8       // UK unit = 8 g
-```
-Presets (US): 12 oz / 355 ml beer @ 5% ≈ 1.0 · 5 oz / 148 ml wine @ 12% ≈ 1.0 ·
-1.5 oz / 44 ml spirit @ 40% ≈ 1.0. Note that many craft beers and pours are 1.5–2+ drinks.
+**Exit check:** log, afford, buy, place, relaunch, still there. Buying twice can't double-charge.
 
-### Pet mood (example)
+### 4. The Wander and pets (new `TippyWander` context)
 
-```
-weekPace   = drinksThisWeek / (weeklyGoal × daysElapsed / 7)
-loggedToday, streak = consecutive days with a check-in
+- A step ledger keyed by fact (`checkIn:<date>`, `reflection:<date>`). The trail is bundled data (areas,
+  landmarks, contents). The pet's position is derived from total steps.
+- Eggs: found, nesting with a check-in countdown, hatched. The pet collection and choosing the active pet.
+- Trail map screen, hatching animation, and the fox visitor after the first recap.
 
-mood =
-  !loggedToday && afterReminderTime → "waiting"    (looks at you, speech bubble: "how was today?")
-  weekPace <= 0.8                   → "thriving"   (bouncy, sparkles)
-  weekPace <= 1.0                   → "happy"
-  weekPace <= 1.3                   → "okay"       (calm, encouraging line)
-  else                              → "concerned"  (sleepy/cozy, never sad-crying; offers tips)
-```
+**Exit check:** the same steps always reach the same landmarks, an egg found in week one hatches on schedule,
+and nothing found is lost on relaunch.
 
-### Data model (sketch)
+### 5. Backup, polish and pilot
 
-```ts
-Settings   { petName, petSpecies, weeklyGoal, drinkFreeDaysGoal, costPerDrink,
-             baselinePerWeek, unitSystem, weekStartsOn, reminderTime }
-DrinkEntry { id, date, timestamp, presetId?, name, volumeMl, abv, stdDrinks, cost? }
-DayCheckIn { date, drinkFree: boolean, note?, mood? }
-Wallet     { coins }  +  CoinEvent { id, date, amount, reason }
-Inventory  { itemId, placed: boolean, position? }
-WeekSummary{ weekStart, totalStd, goal, metGoal, coinsAwarded }   // derived/cached
-```
+- Back up every context (journal, ledgers, purchases, layout, pets) in one versioned file. Restore shows a
+  preview of what will change, applies atomically, and warns that exports contain private notes.
+- Run a two-week pilot on both phones. Questions: was logging easy, did the pets and decorating make her want to
+  come back, and did anything feel like nagging? Feedback is direct; no telemetry.
 
----
+**Exit check:** install, update over the last build, restore a backup, and complete two weeks.
 
-## 5. Tech stack
+## Art needed
 
-- **SwiftUI**, iOS 17+, SwiftPM package built with **xtool** (same as ChoreLock)
-- **Modules/TippyModeration**: Foundation-only domain package (standard drinks, pace, mood, later coins and
-  weeks), unit-tested with `swift test` in CI
-- **SwiftData** for the on-device store; JSON export/import for backups
-- **UserNotifications** for the daily reminder (local, no server)
-- **Swift Charts** for the weekly chart
-- **SwiftUI animations** (or Lottie/Rive later) for the pet
-- **UI smoke test**: XCUITest scenarios on the simulator, recorded to GIFs on PRs (automatically on every PR; free on this public repo)
-- **GitHub Actions + GitHub Pages** for signed builds and over-the-air installs
+The sprite pack covers the teal pet's moods, idle and hop animations, the egg wiggle, four alternate pets, a coin,
+five camp props and four drinks. Still to make (original art; Reduce Motion gets still frames):
+- **Camp:** the pond background, with placement spots marked, plus about 7 more decorations to reach 12.
+- **Wander:** a background or tileset for each of the six areas, path markers, landmark icons, and a nest.
+- **Pets:** eggs patterned for each species, a hatching animation, and mood poses for the alternate pets (they
+  have happy and thriving now; okay, concerned and waiting are still to come).
+- **The fox visitor:** a dusk pose and a short dialogue bubble.
 
-### Server (only if ever needed)
+## Verification and release gates
 
-None is needed: reminders are local notifications and backup can be a file export or CloudKit. If a server is
-ever added, it follows a strict **hexagonal + DDD** structure; see [`server-architecture.md`](./server-architecture.md).
+| Area | Checks |
+| --- | --- |
+| Domain | Standard-drink maths; day and week boundaries across DST, year rollover and travel; missing vs zero; back-fill limits; edits; weekly goal kept per week; once-only awards and steps; atomic purchases; insufficient funds; placement conflicts; egg countdowns. |
+| UI | Smoke scenarios for: onboarding, a zero day, a drink day, editing, reflection, first purchase and placement, the Wander map, a hatch, and a weekly recap. Seeds for each. |
+| Device | Signed install and update keep data; reminder permission and delivery; backup and restore; Dynamic Type, VoiceOver, Reduce Motion; smooth sprite animation. |
+| Privacy and safety | Everything stays on the phone, with no account or analytics. Fixtures and GIFs use made-up data. The not-medical-advice note and helpline stay in Settings. No automatic drinking targets or taper schedules. |
 
-## 6. Build roadmap
+## Decisions
 
-1. **Scaffold** ✅: SwiftPM package + xtool, the ChoreLock build/sign/install-page pipeline, UI smoke test,
-   `TippyModeration` domain (standard drinks, pace, mood) with tests, a placeholder home screen. Next: add the
-   secrets and the App ID, merge to `main`, and install on her phone.
-2. **Persistence**: SwiftData drink entries and check-ins; week boundaries (domain + tests).
-3. **Logging**: quick-log presets with size/ABV, "no drinks today", edit/delete, back-fill.
-4. **Home + pet**: real pet art with 4–5 mood poses, weekly progress ring, streak.
-5. **Coins + weekly recap**: coin events, week rollover, celebration.
-6. **Shop + home decoration**: catalog of items, placing them in the pet's home.
-7. **Stats**: Swift Charts weekly chart, savings, drink-free days.
-8. **Onboarding chat flow.**
-9. **Backup**: export/import JSON (optionally CloudKit later).
-10. **Reminders**: daily local notification, skipped once today is logged.
-11. **Polish**: growth stages, badges, varied reflection prompts, step-down plan, dark mode.
+Settled:
+- **Storage** is one versioned JSON file per context, not SwiftData. It meets every requirement here (atomic,
+  versioned, migratable), and the backup format is the stored format.
+- **Weeks** run Monday to Sunday by default, with a setting to change it.
 
----
-
-## Sources
-
-- App Store listing: https://apps.apple.com/us/app/tipple-alcohol-moderation-pet/id6762130998
-- App Store reviews: https://apps.apple.com/us/app/tipple-alcohol-moderation-pet/id6762130998?see-all=reviews
-- Developer site: https://www.moderation.pet/
-- Screens Design: https://screensdesign.com/discover/apps/tipple-alcohol-moderation-pet/
-- AppShunter: https://appshunter.io/ios/app/tipple-alcohol-moderation-pet/id6762130998
-- AppBrain: https://www.appbrain.com/appstore/tipple-alcohol-moderation-pet/ios-6762130998
-- Tipple - Make the Change: https://apps.apple.com/us/app/tipple-make-the-change/id6795887020
-- Reboo (Google Play): https://play.google.com/store/apps/details?id=com.reframe.reboo
-- SoberPal: https://apps.apple.com/us/app/id6759593525
-- DryDog: https://apps.apple.com/us/app/id6769381741
-- DrinkControl: https://apps.apple.com/us/app/id456207840
+To revisit after the pilot:
+- the coin amounts and prices;
+- how often eggs turn up;
+- whether a "no goal yet" mode is wanted;
+- whether to show money saved on the camp screen.

@@ -55,6 +55,10 @@ jobs:
         # the iOS SDK and is only built below.
         run: swift test --package-path Modules/TippyModeration
 
+      - name: Test the Rewards package
+        # Coins, awards and weekly recaps; Foundation only, like Moderation.
+        run: swift test --package-path Modules/TippyRewards
+
       - name: Install xtool
         run: brew install xtool-org/tap/xtool
 

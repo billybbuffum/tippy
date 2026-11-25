@@ -22,12 +22,15 @@ let package = Package(
         // The Moderation context (standard drinks, weekly pace, the pet's
         // mood) is its own package: Foundation-only domain, tested on a Mac.
         .package(path: "Modules/TippyModeration"),
+        // The Rewards context (coins, weekly recaps), downstream of Moderation.
+        .package(path: "Modules/TippyRewards"),
     ],
     targets: [
         .target(
             name: "Tippy",
             dependencies: [
                 .product(name: "TippyModeration", package: "TippyModeration"),
+                .product(name: "TippyRewards", package: "TippyRewards"),
             ],
             // The sprites the app shows, copied from Assets/Sprites by
             // scripts/sync-sprites.py. SwiftPM bundles them as Tippy_Tippy.bundle,

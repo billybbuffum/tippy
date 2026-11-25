@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(JournalModel.self) private var model
+    @Environment(RewardsModel.self) private var rewards
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -18,14 +19,17 @@ struct RootView: View {
         .alert("Tippy", isPresented: messageShown) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(model.message ?? "")
+            Text(model.message ?? rewards.message ?? "")
         }
     }
 
     private var messageShown: Binding<Bool> {
         Binding(
-            get: { model.message != nil },
-            set: { if !$0 { model.message = nil } }
+            get: { model.message != nil || rewards.message != nil },
+            set: {
+                guard !$0 else { return }
+                if model.message != nil { model.message = nil } else { rewards.message = nil }
+            }
         )
     }
 }

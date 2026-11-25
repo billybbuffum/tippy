@@ -20,6 +20,7 @@ xtool.yml                          app (+ future extension) bundle wiring
 Config/Info.plist                  keys merged on top of xtool's defaults
 Assets/DefaultIcon.png             the home-screen icon (original placeholder art)
 Modules/TippyModeration/           Moderation context (domain): Foundation-only, Swift 6 mode, unit-tested
+Modules/TippyRewards/              Rewards context (domain): coins, awards, weekly recaps; depends on Moderation
 Sources/Tippy/App/                 composition root (TippyApp) and RootView
 Sources/Tippy/Model/               application layer: JournalModel, ports
 Sources/Tippy/Adapters/            port implementations (file store, notifications)
@@ -43,12 +44,12 @@ docs/                              architecture (read first), research and plan,
 ## Building and installing
 
 The `Build` workflow (`.github/workflows/build.yml`) builds **every push to every branch**: it tests
-`Modules/TippyModeration` and builds an unsigned IPA, so a branch shows whether it compiles before it's merged.
+the domain packages (`Modules/TippyModeration`, `Modules/TippyRewards`) and builds an unsigned IPA, so a branch shows whether it compiles before it's merged.
 Only `main` (or "Run workflow") goes on to sign and publish. This repo is public, so GitHub-hosted macOS runners
 are free. That's why Tippy builds and smoke-tests everything automatically, where ChoreLock (private, billed
 minutes) keeps them opt-in.
 
-The `ipa` job tests `Modules/TippyModeration`, then builds an unsigned IPA (artifact `Tippy-unsigned-ipa`). With
+The `ipa` job tests the domain packages, then builds an unsigned IPA (artifact `Tippy-unsigned-ipa`). With
 the repository secrets below in place, the `sign` job fetches (or creates) a development profile for
 `com.billy.tippy`, re-signs the app (`scripts/resign.sh`), and uploads `Tippy-signed-ipa`. Then the `pages` job
 publishes the install page. Profiles are regenerated on every run, so a newly registered phone is included in
@@ -118,6 +119,8 @@ Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`S
 | `onboarding` | first launch |
 | `mid-week` | 3 beers Monday, 3 Tuesday, Wednesday drink-free with a reflection, today not logged, reminder not offered yet |
 | `one-drink` | one beer logged today, nothing else |
+| `last-week-done` | last week (Nov 9–15) logged 6 of 7 days, 10 drinks against 14, one reflection; its day coins earned, goal bonus not yet; recap not seen; this week empty |
+| `coins` | `default` plus 120 coins (synthetic awards) |
 
 Every seed fixes the clock at Thursday 19 November 2026, 6 PM, keeps the journal in memory, and sends no
 notifications, so runs are repeatable.
@@ -129,6 +132,7 @@ On a Mac with a current Xcode, run `brew install xcodegen ffmpeg`, then `scripts
 
 ```bash
 swift test --package-path Modules/TippyModeration
+swift test --package-path Modules/TippyRewards
 ```
 
 This needs only Foundation, so it runs on any Mac (or Linux) with a Swift toolchain.

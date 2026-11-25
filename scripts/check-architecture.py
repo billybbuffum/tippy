@@ -24,7 +24,8 @@ CONTEXTS = sorted(
 IMPORT = re.compile(r"^\s*(?:@[\w()]+\s+)*import\s+(?:(?:struct|class|enum|protocol|func|var|let|typealias)\s+)?([\w.]+)", re.M)
 CLOCK = re.compile(r"\bDate\(\)|\bDate\.now\b")
 ADAPTER_CONSTRUCTION = re.compile(
-    r"\b(FileJournalStore|NotificationReminderScheduler|InMemoryJournalStore|SilentReminderScheduler)\s*[.(]"
+    r"\b(FileJournalStore|FileRewardsStore|NotificationReminderScheduler|InMemoryJournalStore|InMemoryRewardsStore"
+    r"|SilentReminderScheduler)\s*[.(]"
 )
 STRIP_COMMENTS = re.compile(r"//.*?$|/\*.*?\*/", re.M | re.S)
 
@@ -99,8 +100,8 @@ def main() -> int:
             for name in sorted(used):
                 problems.append(f"{rel}: only the composition root (App/) or Demo/ may create {name}")
 
-        if layer == "views" and re.search(r"\bJournalCodec\b|\bstore\.(save|load)\b", source):
-            problems.append(f"{rel}: views go through JournalModel, never storage")
+        if layer == "views" and re.search(r"\b(JournalCodec|RewardsCodec)\b|\bstore\.(save|load)\b", source):
+            problems.append(f"{rel}: views go through the models, never storage")
 
     # Context dependencies must not form a cycle.
     def visit(node: str, stack: list[str]) -> None:

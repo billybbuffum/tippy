@@ -122,6 +122,7 @@ Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`S
 | `one-drink` | one beer logged today, nothing else |
 | `last-week-done` | last week (Nov 9–15) logged 6 of 7 days, 10 drinks against 14, one reflection; its day coins earned, goal bonus not yet; recap not seen; this week empty |
 | `coins` | `default` plus 120 coins (synthetic awards) |
+| `furnished-camp` | 60 coins; lantern, sprout, seashell and lily planter placed in the camp, the mushroom in storage |
 | `egg-ready` | set up, nothing logged, no Wander saved yet: the starter egg is in the nest |
 | `wander-mid` | Nov 11–18 logged with one reflection: 9 steps on the Wander, the pondling out, the moth egg nested one check-in from hatching |
 

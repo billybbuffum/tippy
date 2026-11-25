@@ -55,6 +55,16 @@ MANIFEST = [
     "Wander/node-locked.png",
     *[f"Wander/find-{kind}.png" for kind in ("egg", "gift", "pouch", "visitor", "scenery")],
     "Camp/nest.png",
+    # The camp (spec 02): the scene by day and at dusk, every decoration, and
+    # the decorations' quiet loops (650, 140, 140, 170 ms).
+    "Camp/pond-background.png",
+    "Camp/pond-background-dusk.png",
+    *[f"Camp/{item}.png" for item in (
+        "lantern", "sprout", "seashell", "mushroom", "watering-can", "lily-planter", "flower-pot",
+        "stepping-stones", "reed-cluster", "bench", "string-lights", "willow-arch", "firefly-jar")],
+    *[f"Animations/{loop}.png" for loop in (
+        "lantern-glow", "sprout-sway", "mushroom-bob", "watering-can-tilt", "seashell-glint",
+        "string-lights-twinkle", "firefly-jar-glow", "reed-cluster-sway", "lily-planter-bob")],
 ]
 
 

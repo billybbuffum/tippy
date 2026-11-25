@@ -2,9 +2,8 @@ import SwiftUI
 import TippyModeration
 import TippyWander
 
-/// The camp's nest with its egg sitting in it (spec 02's camp will give it a
-/// spot; until then Home shows it under the pet, or on its own while the
-/// starter hasn't hatched). The egg wiggles when it's one check-in from
+/// The camp's nest with its egg sitting in it, at the nest's spot in the camp
+/// scene (or at the pet's spot while the starter hasn't hatched). The egg wiggles when it's one check-in from
 /// hatching, motion permitting.
 struct NestView: View {
     let species: Species
@@ -31,22 +30,5 @@ struct NestView: View {
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("An egg in the nest")
-    }
-}
-
-/// The nest under the pet: the egg and its countdown.
-struct NestRow: View {
-    let nest: NestStatus
-
-    var body: some View {
-        HStack(spacing: 12) {
-            NestView(species: nest.species, wiggles: nest.checkInsLeft == 1)
-                .frame(width: 72, height: 72)
-                .accessibilityIdentifier("nest-view")
-            Text(nest.countdownText)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("nest-countdown-label")
-        }
     }
 }

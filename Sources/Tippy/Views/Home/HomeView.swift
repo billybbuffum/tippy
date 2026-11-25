@@ -1,5 +1,6 @@
 import SwiftUI
 import TippyModeration
+import TippyRewards
 import TippyWander
 
 struct HomeView: View {
@@ -11,6 +12,9 @@ struct HomeView: View {
     @State private var reflecting: DayItem?
     @State private var showingWander = false
     @State private var hatching: PetItem?
+    @State private var showingShop = false
+    @State private var decorating = false
+    @State private var placingItem: String?
     /// Whether Home is the screen in front (nothing pushed over it). A plain
     /// box, not observed: flipping it must not re-render Home mid-push.
     @State private var front = FrontFlag()
@@ -19,18 +23,18 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    PetScene()
-                    WanderChips { showingWander = true }
+                    // One-time cards first: shown once, so they must be in view without
+                    // scrolling, clear of the bottom action bar under the tall camp scene.
                     if let find = wander.unannouncedFinds.first {
                         FindCard(landmark: find, petName: wander.shownPet?.name ?? model.settings.petName) {
                             withAnimation { wander.announceFind(find.id) }
                         }
                     }
                     if model.shouldOfferReminder {
-                        // Near the top: it's shown once, so it must be in view
-                        // without scrolling, clear of the bottom action bar.
                         ReminderOfferCard()
                     }
+                    PetScene(decorating: $decorating, placingItem: $placingItem) { showingShop = true }
+                    WanderChips { showingWander = true }
                     NextWeekIdeaCard()
                     WeekCard(summary: model.summary)
                     todayCard
@@ -42,7 +46,7 @@ struct HomeView: View {
                 presentHatch()
             }
             .onDisappear { front.isFront = false }
-            .modifier(RewardsPresentation(otherSheetShowing: showingLog || showingSettings || reflecting != nil || hatching != nil || wander.state.pendingHatch != nil))
+            .modifier(RewardsPresentation(otherSheetShowing: showingLog || showingSettings || showingShop || reflecting != nil || hatching != nil || wander.state.pendingHatch != nil))
             .safeAreaInset(edge: .bottom) { actions }
             .navigationTitle("Tippy")
             .navigationBarTitleDisplayMode(.inline)
@@ -57,7 +61,7 @@ struct HomeView: View {
                     .accessibilityIdentifier("history-button")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    CoinBadge(balance: rewards.balance)
+                    CoinBadge(balance: rewards.balance) { showingShop = true }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -72,6 +76,12 @@ struct HomeView: View {
             .navigationDestination(isPresented: $showingWander) { TrailMapView() }
             .sheet(isPresented: $showingLog, onDismiss: presentHatch) { LogDrinkView() }
             .sheet(isPresented: $showingSettings, onDismiss: presentHatch) { SettingsView() }
+            .sheet(isPresented: $showingShop, onDismiss: presentHatch) {
+                ShopView { itemID in
+                    decorating = true
+                    placingItem = itemID
+                }
+            }
             .sheet(item: $reflecting, onDismiss: presentHatch) { item in ReflectionSheet(day: item.day) }
             .fullScreenCover(item: $hatching) { item in HatchView(petID: item.id) }
             .onChange(of: wander.state.pendingHatch) { presentHatch() }
@@ -82,7 +92,7 @@ struct HomeView: View {
     /// check-in hatches the egg, then the reflection usually follows), so
     /// it plays as soon as she's back.
     private func presentHatch() {
-        guard front.isFront, hatching == nil, !showingLog, !showingSettings, reflecting == nil,
+        guard front.isFront, hatching == nil, !showingLog, !showingSettings, !showingShop, reflecting == nil,
               let id = wander.state.pendingHatch else { return }
         hatching = PetItem(id: id)
     }

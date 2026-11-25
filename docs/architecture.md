@@ -153,7 +153,7 @@ goes here, with a unit test.
 | Context | Package | Owns | Status |
 |---|---|---|---|
 | **Moderation** | `TippyModeration` | The journal: drink entries, drink-free days, reflections, the weekly goal per week, settings, week summaries, pet mood, reminder plan | Built |
-| **Rewards** | `TippyRewards` | The coin ledger, the shop catalog, purchases, decorations placed in the camp, weekly recaps | Coins and recaps built; shop next |
+| **Rewards** | `TippyRewards` | The coin ledger, the shop catalog, purchases, decorations placed in the camp, weekly recaps | Built (coins, recaps, shop, camp) |
 | **Wander** | `TippyWander` | The step ledger, the trail (areas, landmarks, finds), eggs, hatching, the pet collection, the active pet | Part 1 built (spec 03a); the collection screen, the visitor and finds into Rewards are next |
 
 Rules between contexts:
@@ -292,12 +292,15 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Reminder** | The evening nudge on a day not yet checked in | `ReminderPlanner`, `ReminderScheduling` |
 | **Backup** | The journal exported as a file; restoring replaces everything | `JournalCodec`, `exportBackup` |
 | **Onboarding** | The first-launch questions | `hasOnboarded`, `OnboardingView` |
-| **Camp** *(Rewards)* | Home: the pond where the active pet lives and decorations are placed | — |
+| **Camp** *(Rewards)* | Home: the pond scene where the active pet lives and decorations are placed | `CampSceneView`, `CampLayout` |
+| **Catalog item**, **slot** *(Rewards)* | A decoration with a stable ID, price and kind (ground, water, light); a spot in the camp of one kind | `CatalogItem`, `CampSlot`, `SlotKind`, `CampCatalog` |
 | **Coins** *(Rewards)* | Earned per check-in (5), with bonuses for drink-free days (+3) and weeks within the goal (+15); recorded once per fact, never revoked. The balance is earned minus spent | `RewardsLedger`, `balance`, `EarningRules` |
 | **Award** *(Rewards)* | Coins recorded once for one fact (a check-in, a drink-free day, a week within its goal, a pouch); never removed | `Award`, `AwardPolicy`, `record` |
 | **Award key** *(Rewards)* | The fact an award was earned for, `"<kind>:<id>"` (`checkIn:2026-11-19`, `weekGoal:2026-11-16`); one award per key | `AwardKey` |
 | **Back-fill window** *(Rewards)* | A day earns coins only within 7 days of the sync (`day >= today - 7`), so remembering a missed day pays but old history can't be farmed | `backfillDays` |
-| **Decoration**, **purchase**, **placement** *(Rewards)* | A shop item; buying it; putting it in a camp spot (moving and storing are free) | — |
+| **Decoration**, **purchase**, **placement** *(Rewards)* | A catalog item; buying it (one of each, never past the balance); putting it in a spot of its kind (moving and storing are free) | `Purchase`, `buy`, `place`, `placements` |
+| **Owned**, **stored**, **grant** *(Rewards)* | Bought or found; owned but not placed; a found decoration given once per `find:<landmark>` key | `owned`, `storedItems()`, `grant` |
+| **Decorate mode** *(Rewards)* | Home with every spot outlined, to place, move or put away decorations by tapping | `PetScene` |
 | **Weekly recap** *(Rewards)* | The summary of last week, shown once after it ends (never a queue of older weeks): total against that week's goal, days, coins with the goal bonus, reflections | `WeeklyRecap`, `RecapPolicy`, `WeeklyRecapView` |
 | **Next-week idea** *(Rewards)* | Her optional "one thing to try next week", written in the recap and shown on Home that week | `nextWeekIdea`, `NextWeekIdeaCard` |
 | **The Wander** *(Wander)* | The trail her pet walks out from the pond, one step at a time | `WanderState`, `WanderModel`, `TrailMapView` |

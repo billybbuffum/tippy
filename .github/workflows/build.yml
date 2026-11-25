@@ -63,6 +63,10 @@ jobs:
         # Steps, the trail, eggs and hatching: Foundation plus Moderation.
         run: swift test --package-path Modules/TippyWander
 
+      - name: Test the Backup package
+        # The backup bundle across the three contexts (spec 04).
+        run: swift test --package-path Modules/TippyBackup
+
       - name: Install xtool
         run: brew install xtool-org/tap/xtool
 

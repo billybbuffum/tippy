@@ -107,6 +107,17 @@ final class WanderModel {
         unannouncedFinds.removeAll { $0.id == landmarkID }
     }
 
+    // MARK: Restore
+
+    /// Replaces the Wander wholesale (a restore). Saves first and throws if that
+    /// fails. Nothing restored is news, so no find cards or replays.
+    func replace(with state: WanderState) throws {
+        try store.save(state)
+        self.state = state
+        lastEvents = WanderEvents()
+        unannouncedFinds = []
+    }
+
     // MARK: Plumbing
 
     /// The single path for every change: apply it to a copy through the

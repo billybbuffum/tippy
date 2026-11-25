@@ -1,5 +1,6 @@
 import Foundation
 import TippyModeration
+import TippyBackup
 import TippyRewards
 import TippyWander
 
@@ -186,6 +187,27 @@ enum UISmokeMode {
         }
         journal.setWeeklyGoal(14, from: journal.week(containing: today))
         return journal
+    }
+
+    /// A synthetic backup for the restore scenarios (the system file picker can't
+    /// be driven from XCUITest): the `two-pets` journal and Wander with Dot out in
+    /// the camp, and the `furnished-camp` coins and decorations.
+    static func demoBackup() -> Data? {
+        guard let journal = journal(for: .twoPets) else { return nil }
+        var wander = wander(for: .twoPets, journal: journal)
+        _ = try? wander?.setActive(petID: "reeds-egg-moth")
+        // Two-pets' coins and seen recap, with the furnished camp's purchases and
+        // placements on top, so nothing is due when the restored app opens.
+        let base = ledger(for: .twoPets) ?? RewardsLedger()
+        let camp = ledger(for: .furnishedCamp) ?? RewardsLedger()
+        let rewards = RewardsLedger(
+            awards: Array(base.awards.values) + Array(camp.awards.values),
+            recaps: Array(base.recaps.values),
+            purchases: camp.purchases,
+            placements: camp.placements
+        )
+        let bundle = BackupBundle(journal: journal, rewards: rewards, wander: wander)
+        return try? BackupFormat.encode(bundle, exportedAt: now, appVersion: "0.2.0", build: "demo")
     }
 
     /// The rewards ledger a seed starts with; nil (nothing saved) for most.

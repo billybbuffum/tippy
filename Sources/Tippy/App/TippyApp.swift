@@ -11,6 +11,7 @@ struct TippyApp: App {
         .environment(models.journal)
         .environment(models.rewards)
         .environment(models.wander)
+        .environment(models.backup)
     }
 
     /// The composition root: real adapters on the phone, demo ones under

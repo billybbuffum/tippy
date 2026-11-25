@@ -19,8 +19,8 @@ Package.swift                      SwiftPM manifest: one library product per bun
 xtool.yml                          app (+ future extension) bundle wiring
 Config/Info.plist                  keys merged on top of xtool's defaults
 Assets/DefaultIcon.png             the home-screen icon (original placeholder art)
-Modules/TippyModeration/           the Moderation context: Foundation-only domain + tests (standard drinks, pace, mood)
-Sources/Tippy/                     the app (SwiftUI)
+Modules/TippyModeration/           the Moderation context: Foundation-only domain + tests (journal, weeks, drinks, mood, reminders plan)
+Sources/Tippy/                     the app: Model/ (JournalModel), Adapters/ (file store, notifications), Views/
 scripts/resign.sh                  re-signs the CI-built IPA with a real development identity
 scripts/merge-entitlements.py      the entitlements each bundle is signed with
 scripts/install-page.sh            builds the GitHub Pages install page around that IPA
@@ -105,8 +105,12 @@ Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`S
 
 | Seed | Starts with |
 |---|---|
-| `default` | a fresh week: nothing logged, goal of 14 |
-| `mid-week` | day 4, 6 standard drinks logged, checked in today |
+| `default` | set up already (pet "Sprout", goal 14, Monday weeks), nothing logged |
+| `onboarding` | first launch |
+| `mid-week` | 3 beers Monday, 3 Tuesday, Wednesday drink-free, today not logged |
+
+Every seed fixes the clock at Thursday 19 November 2026, 6 PM, keeps the journal in memory, and sends no
+notifications, so runs are repeatable.
 
 On a Mac with a current Xcode, run `brew install xcodegen ffmpeg`, then `scripts/ui-smoke.sh`. This writes `out/ui-smoke/`.
 `UI_SMOKE_ONLY="home log-drink"` runs a subset.

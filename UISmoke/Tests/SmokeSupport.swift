@@ -18,9 +18,12 @@ import XCTest
 class SmokeScenario: XCTestCase {
     /// The seed presets demo mode offers; the names match `UISmokeMode.Seed`.
     enum Seed: String {
-        /// A fresh week: nothing logged, goal of 14.
+        /// Set up already (pet "Sprout", goal 14), nothing logged. Today is
+        /// Thursday 19 November 2026 in every seed.
         case `default`
-        /// Day 4 of the week, 6 drinks logged, checked in today.
+        /// First launch: onboarding.
+        case onboarding
+        /// 3 beers Monday, 3 Tuesday, Wednesday drink-free, today not logged.
         case midWeek = "mid-week"
     }
 

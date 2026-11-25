@@ -99,8 +99,10 @@ ideviceinstaller install Tippy.ipa      # later builds: ideviceinstaller upgrade
 
 ## UI smoke test
 
-This works as in ChoreLock, except that it runs **automatically on every pull request** (each push included),
-not behind a `smoke` label. Every XCUITest scenario in `UISmoke/Tests/` runs on the simulator with a recording
+This works as in ChoreLock, except that it runs **automatically on every pull request** (each push included)
+that touches app code, tests or build config (`Sources/`, `Modules/`, `UISmoke/`, `Config/`, `Package.swift`,
+`xtool.yml`, the smoke scripts), not behind a `smoke` label. Docs-only and art-only pull requests skip it, and the
+`Build` workflow skips pushes that only change docs, Markdown or `Assets/Sprites/`. Every XCUITest scenario in `UISmoke/Tests/` runs on the simulator with a recording
 each, and a sticky PR comment shows "Feature demo" first (the scenarios the PR added or changed, GIFs inline),
 then the "Regression suite" table. **Smoke scenario present** (`smoke-scenario-check.yml`) fails a PR that
 changes `Sources/` or `Modules/` without adding or changing a scenario or carrying a `Smoke-demo:` line in its

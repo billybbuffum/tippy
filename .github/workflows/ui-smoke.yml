@@ -18,6 +18,19 @@ name: UI smoke
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    # Only when something that can change what's on screen (or how the
+    # suite runs) changed. Docs-only and art-only PRs skip the 10+ minute
+    # simulator run; art reaches the app through Sources/Tippy/Resources.
+    paths:
+      - 'Sources/**'
+      - 'Modules/**'
+      - 'UISmoke/**'
+      - 'Config/**'
+      - 'Package.swift'
+      - 'xtool.yml'
+      - 'scripts/ui-smoke*'
+      - 'scripts/smoke-scenarios.py'
+      - '.github/workflows/ui-smoke.yml'
   workflow_dispatch:
 
 permissions:
@@ -43,8 +56,19 @@ jobs:
       - name: Show toolchain
         run: xcodebuild -version
 
-      - name: Install xcodegen and ffmpeg
-        run: brew install xcodegen ffmpeg
+      - name: Install xcodegen, and start ffmpeg in the background
+        # xcodegen is needed first and installs in seconds. ffmpeg (and its
+        # ~30 dependencies, about two minutes) is only needed after every
+        # scenario has run, to make the GIFs, so it installs while the app
+        # builds; scripts/ui-smoke.sh waits for it before converting.
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
+        run: |
+          brew install xcodegen
+          nohup brew install ffmpeg > "$RUNNER_TEMP/ffmpeg-install.log" 2>&1 &
+          echo "UI_SMOKE_FFMPEG_PID=$!" >> "$GITHUB_ENV"
 
       - name: Build, then run and record every scenario
         id: smoke

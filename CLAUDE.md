@@ -26,7 +26,8 @@ before changing code)**, and `docs/server-architecture.md` for the server rules.
 
 - Real builds happen on CI. `.github/workflows/build.yml` runs on **every push to every branch** (domain tests
   + unsigned device IPA via xtool; only `main` signs and publishes). `.github/workflows/ui-smoke.yml` runs on
-  **every pull request** (simulator, XCUITest). The repo is public, so macOS runners are free. Push your branch
+  **every pull request that touches app code, tests or build config** (simulator, XCUITest); docs-only and
+  art-only changes skip it, and the build skips docs-only pushes. The repo is public, so macOS runners are free. Push your branch
   and read the run's result rather than guessing whether it compiles. Keep the build path in step with
   ChoreLock's; don't restructure it.
 - Keep `swift-tools-version: 6.0` and the `Package.swift` product layout (one `.library` per bundle, the app's

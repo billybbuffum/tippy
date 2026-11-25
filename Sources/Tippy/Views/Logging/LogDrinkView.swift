@@ -90,12 +90,6 @@ struct LogDrinkView: View {
             } footer: {
                 Text("A US standard drink is 14 g of alcohol: about a 12 oz beer, a 5 oz glass of wine or a 1.5 oz shot.")
             }
-            if let editing {
-                Section {
-                    Button("Delete drink", role: .destructive) { delete(editing) }
-                        .accessibilityIdentifier("delete-drink-button")
-                }
-            }
         }
         .emptyDayDialog(for: $deletingLast) { dismiss() }
         .navigationTitle(editing == nil ? "Log a drink" : "Edit drink")
@@ -109,6 +103,14 @@ struct LogDrinkView: View {
                 Button("Save") { save() }
                     .disabled(draft.entryPreview == nil)
                     .accessibilityIdentifier("save-drink-button")
+            }
+            if let editing {
+                // Always in view, however far the form scrolls.
+                ToolbarItem(placement: .bottomBar) {
+                    Button("Delete drink", role: .destructive) { delete(editing) }
+                        .tint(.red)
+                        .accessibilityIdentifier("delete-drink-button")
+                }
             }
         }
     }

@@ -38,7 +38,6 @@ final class HistoryScenarios: SmokeScenario {
         screen("history", app.navigationBars["History"])
         element("history-entry-row").tap()
         screen("edit", app.navigationBars["Edit drink"])
-        reveal(element("delete-drink-button"))
         element("delete-drink-button").tap()
         tapDialogButton("empty-day-drink-free-button", title: "Mark the day drink-free")
         screen("now-drink-free", element("history-drink-free-row"))

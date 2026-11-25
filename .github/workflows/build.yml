@@ -1,0 +1,249 @@
+name: Build
+
+# This repo is public, so GitHub-hosted runners (macOS included) cost
+# nothing: every push to any branch is built and its domain tests run.
+# Only main (or "Run workflow") goes on to sign and publish the install
+# page. Pull requests from forks are built through pull_request, since
+# their pushes happen elsewhere; same-repo PRs are already covered by push.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # A newer push to the same branch supersedes the older build, except on
+  # main, where every merge keeps its own signed build.
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  # One bundle today (the app, no extensions). Add an extension's bundle ID
+  # here when one is added to xtool.yml, so it gets a profile too.
+  BUNDLE_IDS: >-
+    com.billy.tippy
+
+jobs:
+  ipa:
+    name: Build unsigned IPA
+    # Fork PRs only; a same-repo PR's commits are built by its push.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Test the Moderation package
+        # The Foundation-only domain (standard drinks, weekly pace, the
+        # pet's mood) builds and tests on the Mac itself; the app needs
+        # the iOS SDK and is only built below.
+        run: swift test --package-path Modules/TippyModeration
+
+      - name: Install xtool
+        run: brew install xtool-org/tap/xtool
+
+      - name: Stamp build number
+        # CFBundleVersion = the Actions run number, so every CI build is a
+        # newer version than the last and installs cleanly over it.
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" Config/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :CFBundleVersion" Config/Info.plist
+
+      - name: App icon
+        # Assets/DefaultIcon.png, unless an encrypted Assets/Icon.png.gpg
+        # and the ICON_PASSPHRASE secret are both present
+        # (scripts/app-icon.sh).
+        env:
+          ICON_PASSPHRASE: ${{ secrets.ICON_PASSPHRASE }}
+        run: |
+          command -v gpg >/dev/null || brew install gnupg
+          scripts/app-icon.sh
+
+      - name: Build
+        # No Apple login on CI: the IPA is ad-hoc signed with our entitlements
+        # embedded. The `sign` job below replaces that with a real signature.
+        run: xtool dev build --ipa --configuration release
+
+      - name: Inspect
+        # Lists the bundle layout and the entitlements baked into each binary,
+        # so the log shows the extensions and capabilities are all present.
+        run: |
+          rm -rf inspect && mkdir inspect && cd inspect
+          unzip -q ../xtool/Tippy.ipa
+          find Payload -maxdepth 4 -not -name "*.png" | sort
+          for bin in Payload/Tippy.app/Tippy Payload/Tippy.app/PlugIns/*.appex/*; do
+            case "$bin" in *.plist|*/_CodeSignature*|*/Frameworks*) continue;; esac
+            [ -f "$bin" ] || continue
+            echo "== $bin"
+            codesign -d --entitlements :- "$bin" 2>/dev/null || echo "(no entitlements)"
+          done
+          for plist in Payload/Tippy.app/PlugIns/*.appex/Info.plist; do
+            [ -f "$plist" ] || continue   # no extensions yet
+            echo "== $plist"
+            /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" -c "Print :NSExtension:NSExtensionPointIdentifier" -c "Print :NSExtension:NSExtensionPrincipalClass" "$plist"
+          done
+
+      - name: Collect
+        run: |
+          mkdir -p out
+          cp xtool/Tippy.ipa out/
+          cd out && shasum -a 256 Tippy.ipa | tee SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tippy-unsigned-ipa
+          path: out/
+          if-no-files-found: error
+
+  sign:
+    name: Sign with Apple developer account
+    needs: ipa
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    runs-on: macos-latest
+    timeout-minutes: 20
+    outputs:
+      signed: ${{ steps.secrets.outputs.ok }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tippy-unsigned-ipa
+          path: unsigned
+
+      - name: Check secrets
+        id: secrets
+        env:
+          P12: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          KEY: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          if [ -n "$P12" ] && [ -n "$KEY" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Signing skipped: add the APPLE_CERT_* and ASC_* repository secrets (see README) to get a signed IPA."
+          fi
+
+      - name: Import certificate into a temporary keychain
+        if: steps.secrets.outputs.ok == 'true'
+        env:
+          P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          curl -sSL -o "$RUNNER_TEMP/wwdr.cer" https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/wwdr.cer" -k "$KEYCHAIN" -T /usr/bin/codesign || true
+          security import "$RUNNER_TEMP/cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | grep 'Apple Development' | head -1 | sed -E 's/.*"(.*)".*/\1/')"
+          if [ -z "$IDENTITY" ]; then
+            echo "error: no 'Apple Development' identity found in the .p12" >&2
+            security find-identity -v -p codesigning "$KEYCHAIN" || true
+            exit 1
+          fi
+          echo "Identity: $IDENTITY"
+          echo "IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+      - name: Fetch development profiles
+        if: steps.secrets.outputs.ok == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_HIDE_CHANGELOG: "1"
+          LC_ALL: en_US.UTF-8
+          LANG: en_US.UTF-8
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > "$RUNNER_TEMP/asc.json"
+          import json, os
+          print(json.dumps({
+              "key_id": os.environ["ASC_KEY_ID"].strip(),
+              "issuer_id": os.environ["ASC_ISSUER_ID"].strip(),
+              "key": os.environ["ASC_KEY_P8"].strip() + "\n",
+              "in_house": False,
+          }))
+          PY
+          mkdir -p profiles
+          for id in $BUNDLE_IDS; do
+            echo "== profile for $id"
+            fastlane sigh --development --force --skip_install \
+              --api_key_path "$RUNNER_TEMP/asc.json" \
+              --app_identifier "$id" \
+              --output_path profiles \
+              --filename "$id.mobileprovision"
+          done
+          rm -f "$RUNNER_TEMP/asc.json"
+          ls -la profiles
+
+      - name: Re-sign
+        if: steps.secrets.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p signed
+          scripts/resign.sh unsigned/Tippy.ipa profiles "$IDENTITY" "$PWD/signed/Tippy.ipa"
+          cd signed && shasum -a 256 Tippy.ipa | tee SHA256SUMS
+
+      - name: Clean up keychain
+        if: always() && steps.secrets.outputs.ok == 'true'
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+
+      - uses: actions/upload-artifact@v4
+        if: steps.secrets.outputs.ok == 'true'
+        with:
+          name: Tippy-signed-ipa
+          path: signed/
+          if-no-files-found: error
+
+  # Publishes the signed IPA behind an "Install Tippy" page, so a
+  # registered phone installs from Safari with no computer. This repo is
+  # public, so the page is served from its own gh-pages branch, replaced
+  # with a single commit on every build (ChoreLock, being private, needs a
+  # separate public install repo and a deploy key; Tippy does not).
+  pages:
+    name: Publish install page
+    needs: sign
+    if: needs.sign.outputs.signed == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # pushes the gh-pages branch
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tippy-signed-ipa
+          path: signed
+
+      - name: Build the page
+        run: |
+          sudo apt-get install -y --no-install-recommends imagemagick >/dev/null
+          repo="${GITHUB_REPOSITORY#*/}"
+          scripts/install-page.sh "https://${{ github.repository_owner }}.github.io/$repo" signed/Tippy.ipa site
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: site
+          # One commit, replaced each build: the branch never piles up
+          # old IPAs.
+          force_orphan: true
+          commit_message: "Tippy build ${{ github.run_number }} (${{ github.sha }})"

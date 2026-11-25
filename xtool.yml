@@ -1,0 +1,11 @@
+version: 1
+bundleID: com.billy.tippy
+product: Tippy
+infoPath: Config/Info.plist
+# No entitlementsPath: Tippy needs no capabilities yet (local notifications
+# need none). Add Config/App.entitlements here when it does, and tick the
+# same capability on the App ID in the developer portal.
+# 1024x1024 PNG, no transparency; xtool copies it into the bundle and
+# sets CFBundleIconFile, and iOS scales and rounds it.
+# Not committed: scripts/app-icon.sh writes it before a build.
+iconPath: Assets/Icon.png

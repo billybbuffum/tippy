@@ -1,0 +1,22 @@
+.DS_Store
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/configuration/registries.json
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.netrc
+
+# xtool build output
+/xtool
+
+# Local SwiftPM packages under Modules/ build into their own .build
+/Modules/*/.build
+
+# UI smoke test (scripts/ui-smoke.sh): generated project and outputs
+/out
+/UISmoke/*.xcodeproj
+/UISmoke/*.xcworkspace
+
+# The app icon, decrypted or defaulted by scripts/app-icon.sh; never commit it
+/Assets/Icon.png

@@ -1,0 +1,38 @@
+name: Smoke scenario present
+
+# The cheap gate behind the UI smoke pipeline: a pull request that changes
+# Sources/ or Modules/ must add or change a scenario in UISmoke/Tests/,
+# name an existing one that shows the change (`Smoke-demo: <scenario>` in
+# the body), or declare it has nothing to show (`Smoke-demo: none`). Runs
+# again when the body is edited, so the line can be added afterwards. See
+# CLAUDE.md and scripts/smoke-scenarios.py.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-scenario-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Smoke scenario present
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for a scenario or a Smoke-demo line
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$BODY" > pr-body.md
+          git fetch -q origin "$BASE"
+          python3 scripts/smoke-scenarios.py check --base "origin/$BASE" --body-file pr-body.md

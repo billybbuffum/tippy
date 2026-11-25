@@ -1,0 +1,30 @@
+name: UI smoke cleanup
+
+# When a pull request closes, drops its pr-<n>/ directory of GIFs from the
+# orphan pr-media branch that ui-smoke.yml publishes to. Its own workflow
+# so that it never shares a concurrency group with a smoke run in flight
+# (merging a PR mid-run used to cancel both). Linux, seconds, no macOS
+# minutes.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ui-smoke-cleanup-${{ github.event.pull_request.number }}
+
+jobs:
+  cleanup:
+    name: Remove the closed PR's media
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Drop pr-<n>/ from the pr-media branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: scripts/ui-smoke-publish.sh remove "pr-$NUMBER"

@@ -1,0 +1,81 @@
+# Throwaway Xcode project for the simulator UI smoke test, and nothing else.
+# `xcodegen generate --spec UISmoke/project.yml --project UISmoke` writes
+# TippySmoke.xcodeproj next to this file (scripts/ui-smoke.sh does it;
+# the project is not committed). The device build stays xtool + Package.swift.
+#
+# The app target has no sources of its own: it links the package's
+# `Tippy` library product, whose `@main` provides the entry point. That
+# is the same trick xtool's own `generate-xcode-project` uses, so there is
+# no second list of source files to keep in step with Package.swift. The
+# extensions are left out; the simulator cannot run them anyway.
+name: TippySmoke
+options:
+  bundleIdPrefix: com.billy
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  generateEmptySchemes: false
+
+packages:
+  Tippy:
+    path: ..
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    # Simulator only; never signed, so no team is needed.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  TippyApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: Shell
+    dependencies:
+      - package: Tippy
+        product: Tippy
+    settings:
+      base:
+        PRODUCT_NAME: Tippy
+        # Not "Tippy": that is the package module's name, and two
+        # targets writing Tippy.swiftmodule fails the build.
+        PRODUCT_MODULE_NAME: TippyApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.billy.tippy
+        TARGETED_DEVICE_FAMILY: "1"
+        # Config/Info.plist holds only the keys xtool merges on top of its
+        # defaults; Xcode generates the rest and merges the file in.
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_FILE: ../Config/Info.plist
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+
+  TippySmokeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: TippyApp
+    settings:
+      base:
+        TEST_TARGET_NAME: TippyApp
+        GENERATE_INFOPLIST_FILE: "YES"
+
+schemes:
+  TippySmoke:
+    build:
+      targets:
+        TippyApp: all
+        TippySmokeUITests: [test]
+    run:
+      config: Debug
+      commandLineArguments:
+        "-ui-smoke": true
+    test:
+      config: Debug
+      targets:
+        - TippySmokeUITests

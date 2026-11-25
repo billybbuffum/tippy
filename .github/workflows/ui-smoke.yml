@@ -1,0 +1,154 @@
+name: UI smoke
+
+# Builds the app for the iOS Simulator, runs every UI smoke scenario in
+# UISmoke/Tests (XCUITest) with a recording per scenario, and posts the
+# result on the pull request: the scenarios this PR added or changed first
+# ("Feature demo", GIFs inline), then the whole suite as a table with the
+# clips folded away. The GIFs live on the orphan pr-media branch under
+# pr-<n>/, removed when the PR closes (ui-smoke-cleanup.yml). See "UI smoke
+# test" in README.md and CLAUDE.md. The cheap "Smoke scenario present"
+# check is a separate workflow (smoke-scenario-check.yml).
+#
+# Opt-in only: macOS minutes are billed, so this runs when the `smoke`
+# label is added to a pull request (remove and re-add it to run again on
+# a newer push), or by hand from the Actions tab. It does not run on
+# every push.
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: write        # the GIFs go on the pr-media branch
+  pull-requests: write   # the sticky comment
+
+concurrency:
+  group: ui-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Simulator scenarios
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'smoke'
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The demo detection diffs against the merge base with the base
+          # branch, so that history is needed.
+          fetch-depth: 0
+
+      - name: Show toolchain
+        run: xcodebuild -version
+
+      - name: Install xcodegen and ffmpeg
+        run: brew install xcodegen ffmpeg
+
+      - name: Build, then run and record every scenario
+        id: smoke
+        run: scripts/ui-smoke.sh out/ui-smoke
+
+      - name: Upload the clips
+        id: clips
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-clips
+          path: |
+            out/ui-smoke/clips/
+            out/ui-smoke/results.json
+          if-no-files-found: ignore
+
+      - name: Upload the screenshots
+        id: shots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-screenshots
+          path: |
+            out/ui-smoke/shots/
+            out/ui-smoke/final.png
+          if-no-files-found: ignore
+
+      - name: Upload the logs
+        id: logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-logs
+          path: |
+            out/ui-smoke/*.log
+            out/ui-smoke/signals/
+            out/ui-smoke/smoke.xcresult
+          if-no-files-found: ignore
+
+      - name: Work out the feature demos
+        id: demos
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          # The body as it is now, not as it was when the run started, so
+          # a Smoke-demo line added after the push still counts.
+          gh pr view "$NUMBER" --json body --jq .body > pr-body.md || : > pr-body.md
+          git fetch -q origin "$BASE"
+          python3 scripts/smoke-scenarios.py changed --base "origin/$BASE" --body-file pr-body.md --json > demos.json
+          cat demos.json
+
+      - name: Publish the GIFs to the pr-media branch
+        id: publish
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          mkdir -p gifs
+          cp out/ui-smoke/clips/*.gif gifs/ 2>/dev/null || true
+          if ls gifs/*.gif > /dev/null 2>&1; then
+            url=$(scripts/ui-smoke-publish.sh put gifs "pr-$NUMBER")
+            echo "url=$url" >> "$GITHUB_OUTPUT"
+            echo "GIFs under $url"
+          else
+            echo "::warning::No GIF was produced; the comment will have no clips."
+          fi
+
+      - name: Comment on the pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          MEDIA_URL: ${{ steps.publish.outputs.url }}
+          CLIPS_ID: ${{ steps.clips.outputs.artifact-id }}
+          SHOTS_ID: ${{ steps.shots.outputs.artifact-id }}
+          LOGS_ID: ${{ steps.logs.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          [ -s demos.json ] || echo '{"demos": [], "source": "diff"}' > demos.json
+          artifact() { if [ -n "$1" ]; then echo "$run_url/artifacts/$1"; fi; }
+          python3 scripts/ui-smoke-comment.py \
+            --results out/ui-smoke/results.json \
+            --demos demos.json \
+            --media-url "$MEDIA_URL" \
+            --run-url "$run_url" \
+            --clips-artifact "$(artifact "$CLIPS_ID")" \
+            --shots-artifact "$(artifact "$SHOTS_ID")" \
+            --logs-artifact "$(artifact "$LOGS_ID")" \
+            --sha "$SHA" \
+            --run-number "$GITHUB_RUN_NUMBER" > comment.md
+          existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" --paginate \
+            --jq '.[] | select(.body | contains("<!-- ui-smoke -->")) | .id' | head -n 1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -F body=@comment.md > /dev/null
+            echo "Updated comment $existing"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" -F body=@comment.md > /dev/null
+            echo "Posted a new comment"
+          fi

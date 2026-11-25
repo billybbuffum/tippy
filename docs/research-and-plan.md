@@ -60,19 +60,18 @@ inspired by **Tipple: Alcohol Moderation Pet** (iOS, by Myrtle).
 
 ## 2. What you need to decide
 
-### 2a. Platform (the biggest decision)
+### 2a. Platform: decided
 
-The right choice depends on what phone your wife uses and how much hassle you'll accept.
+**Native SwiftUI iPhone app, built and distributed exactly like ChoreLock.** GitHub Actions builds the
+SwiftPM package with xtool on a macOS runner, signs it with the existing Apple Developer account, and publishes
+an over-the-air install page (`https://billybbuffum.github.io/tippy/`) that a registered iPhone installs from
+in Safari. No Mac or Xcode is needed. See the README for the one-time setup.
 
-| Option | Cost | Pros | Cons |
-|---|---|---|---|
-| **PWA** (web app added to the home screen) ⭐ recommended to start | Free (GitHub Pages) | One codebase for iPhone and Android, no App Store, works offline, instant updates | On iOS, scheduled *local* notifications aren't possible. Reminders need web push (iOS 16.4+, installed to the home screen, plus a small push server) or simply opening the app. No widgets, no HealthKit |
-| **Expo / React Native** | Free on Android. On iPhone: a free Apple ID (re-sign every 7 days) **or** the $99/yr Apple Developer Program for TestFlight | Real local notifications, widgets possible, feels native | Build tooling, Apple signing hassle |
-| **Native SwiftUI** | Same Apple costs as above; needs a Mac with Xcode | Best iOS feel, widgets, HealthKit | iOS only, and a Mac is required |
-
-**Recommendation:** build a **PWA with Vite + React + TypeScript**, storing everything on the
-device. If daily reminders turn out to matter a lot, wrap the same code later (with Capacitor)
-or port it to Expo.
+What this gives over the earlier web-app idea:
+- **Real local notifications** (`UserNotifications`) for the daily check-in reminder, with **no server**.
+- Home-screen and lock-screen **widgets** (WidgetKit extension + App Group) later.
+- Optional **Apple Health** logging of alcoholic beverages (HealthKit) later.
+- SwiftData persistence; optional iCloud/CloudKit backup later, as ChoreLock's household does.
 
 ### 2b. Name and art (IP hygiene)
 
@@ -100,7 +99,7 @@ For a private app for your wife, anything goes. Because this repo is **public an
 2. "How many drinks in a typical week?" (baseline)
 3. Weekly goal in standard drinks (suggest baseline −20–30%), plus optional drink-free-days target.
 4. Typical cost per drink (for the savings calculator).
-5. Reminder time (if notifications are supported).
+5. Reminder time for the daily local notification.
 
 **Daily use**
 - **Quick log**: preset buttons (beer, glass of wine, cocktail, shot, seltzer) with editable size and ABV,
@@ -126,8 +125,8 @@ For a private app for your wife, anything goes. Because this repo is **public an
 - Optional "break" mode (e.g. a 30-day dry challenge).
 
 **Data and settings**
-- Everything stored on the device (IndexedDB). No account, no server, no analytics.
-- **Export/import JSON backup** (important: clearing browser data would otherwise wipe history).
+- Everything stored on the device (SwiftData). No account, no server, no analytics.
+- **Export/import JSON backup** (deleting the app would otherwise wipe history).
 - Units: US standard drinks by default; UK units as an option.
 
 ---
@@ -172,38 +171,37 @@ WeekSummary{ weekStart, totalStd, goal, metGoal, coinsAwarded }   // derived/cac
 
 ---
 
-## 5. Suggested tech stack (PWA path)
+## 5. Tech stack
 
-- **Vite + React + TypeScript**
-- **vite-plugin-pwa** (service worker, offline, installable manifest)
-- **Dexie.js** (IndexedDB) for local storage
-- **Zustand** or React context for UI state
-- **Framer Motion** or CSS animations plus SVG/Lottie for the pet
-- **A small chart library** (Recharts) or hand-rolled SVG bars
-- **Vitest** for the unit/mood/coin logic
-- **GitHub Pages** via a GitHub Action for free hosting at `billybbuffum.github.io/tippy`
+- **SwiftUI**, iOS 17+, SwiftPM package built with **xtool** (same as ChoreLock)
+- **Modules/TippyModeration**: Foundation-only domain package (standard drinks, pace, mood, later coins and
+  weeks), unit-tested with `swift test` in CI
+- **SwiftData** for the on-device store; JSON export/import for backups
+- **UserNotifications** for the daily reminder (local, no server)
+- **Swift Charts** for the weekly chart
+- **SwiftUI animations** (or Lottie/Rive later) for the pet
+- **UI smoke test**: XCUITest scenarios on the simulator, recorded to GIFs on PRs (opt-in `smoke` label)
+- **GitHub Actions + GitHub Pages** for signed builds and over-the-air installs
 
-### Server (only if needed)
+### Server (only if ever needed)
 
-The app works with no server. A server is added only for **Reminders** (Web Push, because iOS web apps can't
-schedule their own notifications) and, later, optional **encrypted Backup**. All server code follows a
-strict **hexagonal + DDD** structure; see [`server-architecture.md`](./server-architecture.md).
-
----
+None is needed: reminders are local notifications and backup can be a file export or CloudKit. If a server is
+ever added, it follows a strict **hexagonal + DDD** structure; see [`server-architecture.md`](./server-architecture.md).
 
 ## 6. Build roadmap
 
-1. **Scaffold**: Vite/React/TS, PWA manifest + icons, deploy to GitHub Pages, confirm "Add to Home Screen" works on her phone.
-2. **Data layer**: Dexie schema, standard-drink math, week boundaries (with tests).
-3. **Logging**: quick-log presets, "no drinks today", edit/delete, back-fill.
-4. **Home + pet**: static pet with 4–5 mood poses, weekly progress ring, streak.
+1. **Scaffold** ✅: SwiftPM package + xtool, the ChoreLock build/sign/install-page pipeline, UI smoke test,
+   `TippyModeration` domain (standard drinks, pace, mood) with tests, a placeholder home screen. Next: add the
+   secrets and the App ID, merge to `main`, and install on her phone.
+2. **Persistence**: SwiftData drink entries and check-ins; week boundaries (domain + tests).
+3. **Logging**: quick-log presets with size/ABV, "no drinks today", edit/delete, back-fill.
+4. **Home + pet**: real pet art with 4–5 mood poses, weekly progress ring, streak.
 5. **Coins + weekly recap**: coin events, week rollover, celebration.
 6. **Shop + home decoration**: catalog of items, placing them in the pet's home.
-7. **Stats**: weekly chart, savings, drink-free days.
+7. **Stats**: Swift Charts weekly chart, savings, drink-free days.
 8. **Onboarding chat flow.**
-9. **Backup**: export/import JSON.
-10. **Reminders**: the Reminders bounded context on the server (hexagonal/DDD, see
-    `server-architecture.md`) plus client push subscription. Alternatively, a Capacitor/Expo wrapper with local notifications.
+9. **Backup**: export/import JSON (optionally CloudKit later).
+10. **Reminders**: daily local notification, skipped once today is logged.
 11. **Polish**: growth stages, badges, varied reflection prompts, step-down plan, dark mode.
 
 ---

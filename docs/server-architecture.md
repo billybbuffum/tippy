@@ -5,17 +5,20 @@ Every server-side part of Tippy follows **Domain-Driven Design** with a strict
 
 ## 1. Where the server fits
 
-The app is local-first. The core domain (drink logging, weekly goals, the pet's mood, coins, the shop)
-runs **on the device** and needs no server. A server exists only for things a phone-installed web app can't do alone:
+**Today there is no server, and none is planned.** Tippy is a native iPhone app (see the README), so:
 
-| Bounded context | Subdomain type | Why it needs a server | Phase |
-|---|---|---|---|
-| **Reminders** | Supporting | iOS web apps can't schedule their own notifications; reminders must come from a Web Push sender | When reminders are wanted |
-| **Backup** | Generic | Optional end-to-end-encrypted backup, so clearing browser data doesn't wipe history | Later, optional |
+- **Reminders** are local notifications scheduled on the phone (`UserNotifications`), with no Web Push sender needed.
+- **Backup** is a JSON export, or later CloudKit (as in ChoreLock's household), with no server of our own needed.
 
-Privacy rule: the server **never** receives drink data, notes or pet state. Reminders store only a push
-subscription, a reminder time, a time zone, and the date of the last check-in. Backup stores only ciphertext
-it can't read.
+The rules below still bind the moment any server-side code appears: a sync service, an API, or a scheduled job.
+The Reminders context in section 5 is kept as the worked example of how such a context must be shaped.
+
+The same thinking applies on the device: domain logic lives in Foundation-only packages under `Modules/`
+(e.g. `Modules/TippyModeration`), with ports for anything external, mirroring ChoreLock's `ChoreLockHousehold`
+module (domain + `HouseholdSync` port + CloudKit adapter).
+
+Privacy rule: no drink data, notes or pet state may reach any server unless the user turns on a feature that
+says so. Backup data must be end-to-end encrypted.
 
 ## 2. Ubiquitous language
 
@@ -140,7 +143,7 @@ server/
   .dependency-cruiser.cjs
 ```
 
-## 5. Reminders context (first server feature)
+## 5. Worked example: a Reminders context (if reminders ever moved server-side)
 
 **Aggregate `ReminderSchedule`** (id = `DeviceId`)
 - State: `pushEndpoint`, `localTime`, `timeZone`, `enabled`, `lastCheckInDate?`, `lastReminderDate?`
@@ -159,9 +162,9 @@ server/
 
 The client calls `AcknowledgeCheckIn` after each check-in, sending only the date.
 
-## 6. Technology (adapters only, so it can be swapped)
+## 6. Technology, if a server is ever added (adapters only, so it can be swapped)
 
-- TypeScript (same language as the web app), Node 22 LTS.
+- Swift on the server (Vapor or Hummingbird), so a Foundation-only domain package could be shared with the app; or TypeScript/Node 22 LTS.
 - HTTP adapter: Hono (also runs on Cloudflare Workers).
 - Persistence adapter: SQLite (local) / Cloudflare D1 (hosted). Both implement the same repository port and pass the same contract tests.
 - Push adapter: `web-push` (VAPID keys from env/secrets, never committed).

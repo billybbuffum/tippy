@@ -15,14 +15,17 @@ The Reminders context in section 5 is kept as the worked example of how such a c
 
 The same thinking applies on the device: domain logic lives in Foundation-only packages under `Modules/`
 (e.g. `Modules/TippyModeration`), with ports for anything external, mirroring ChoreLock's `ChoreLockHousehold`
-module (domain + `HouseholdSync` port + CloudKit adapter).
+module (domain + `HouseholdSync` port + CloudKit adapter). The full app rules are in [`architecture.md`](./architecture.md).
 
 Privacy rule: no drink data, notes or pet state may reach any server unless the user turns on a feature that
 says so. Backup data must be end-to-end encrypted.
 
 ## 2. Ubiquitous language
 
-Use these exact terms in code, tests, UI copy and docs. If a term changes, update this table first.
+The shared terms (journal, drink entry, check-in, drink-free day, week, standard drink…) are defined once in
+[`architecture.md`, section 13](./architecture.md#13-ubiquitous-language). The table below repeats the core
+ones and adds server-only terms (device, reminder schedule, backup snapshot). If a term changes, update
+`architecture.md` first.
 
 | Term | Meaning |
 |---|---|

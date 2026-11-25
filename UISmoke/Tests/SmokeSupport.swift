@@ -18,10 +18,16 @@ import XCTest
 class SmokeScenario: XCTestCase {
     /// The seed presets demo mode offers; the names match `UISmokeMode.Seed`.
     enum Seed: String {
-        /// A fresh week: nothing logged, goal of 14.
+        /// Set up already (pet "Sprout", goal 14), nothing logged. Today is
+        /// Thursday 19 November 2026 in every seed.
         case `default`
-        /// Day 4 of the week, 6 drinks logged, checked in today.
+        /// First launch: onboarding.
+        case onboarding
+        /// 3 beers Monday, 3 Tuesday, Wednesday drink-free with a reflection,
+        /// today not logged; the reminder not offered yet.
         case midWeek = "mid-week"
+        /// One beer logged today, nothing else; the reminder already offered.
+        case oneDrink = "one-drink"
     }
 
     var app: XCUIApplication!
@@ -170,6 +176,18 @@ class SmokeScenario: XCTestCase {
         while !element.isHittable && attempts < 8 {
             app.swipeUp()
             attempts += 1
+        }
+    }
+
+    /// Taps a button in a confirmation dialog. SwiftUI doesn't always carry
+    /// accessibility identifiers onto the system action sheet's buttons, so
+    /// this falls back to the button's title there, and only there.
+    func tapDialogButton(_ identifier: String, title: String) {
+        let byIdentifier = element(identifier)
+        if byIdentifier.waitForExistence(timeout: 3) {
+            byIdentifier.tap()
+        } else {
+            app.buttons[title].firstMatch.tap()
         }
     }
 

@@ -3,7 +3,8 @@
 A personal, open-source, non-commercial iPhone app (SwiftUI) for drinking less, with a virtual pet. It is built as
 a SwiftPM package with [xtool](https://xtool.sh) on GitHub Actions, using **the same build system as
 ChoreLock** (`billybbuffum/ChoreLock`). See README.md for how the pieces fit,
-`docs/research-and-plan.md` for the product plan, and `docs/server-architecture.md` for the server rules.
+`docs/research-and-plan.md` for the product plan, **`docs/architecture.md` for the app's architecture (read it
+before changing code)**, and `docs/server-architecture.md` for the server rules.
 
 ## Rules
 
@@ -12,8 +13,12 @@ ChoreLock** (`billybbuffum/ChoreLock`). See README.md for how the pieces fit,
   with dependencies pointing inward only, a single composition root, no cross-context imports, and the
   ubiquitous-language table kept up to date. Don't take shortcuts (no business logic in routes or repositories,
   no framework imports in the domain), even for small features.
-- Domain logic lives in Foundation-only packages under `Modules/` (like `Modules/TippyModeration`), never in
-  SwiftUI views. The app depends on them, never the other way round.
+- **The app follows `docs/architecture.md`**: DDD with ports and adapters in Swift. Business rules live in
+  Foundation-only context packages under `Modules/` (Swift 6 mode, unit-tested); `Sources/Tippy/Model/` holds
+  `@MainActor @Observable` models that are the only place state changes; `Adapters/` implement ports with Apple
+  frameworks; `Views/<Feature>/` are SwiftUI with no business logic; `App/TippyApp.swift` is the only composition
+  root; `Demo/` is the smoke-test stand-ins. Work in the order of its section 12, and keep its ubiquitous
+  language table current. `scripts/check-architecture.py` (CI: `architecture.yml`) must pass.
 - No drink entries, notes or pet state may leave the phone except through a feature the user explicitly turns on.
 - Don't reuse Tipple's name, art, screenshots or copy; use original or CC0 assets.
 
@@ -21,12 +26,14 @@ ChoreLock** (`billybbuffum/ChoreLock`). See README.md for how the pieces fit,
 
 - Real builds happen on CI. `.github/workflows/build.yml` runs on **every push to every branch** (domain tests
   + unsigned device IPA via xtool; only `main` signs and publishes). `.github/workflows/ui-smoke.yml` runs on
-  **every pull request** (simulator, XCUITest). The repo is public, so macOS runners are free. Push your branch
+  **every pull request that touches app code, tests or build config** (simulator, XCUITest); docs-only and
+  art-only changes skip it, and the build skips docs-only pushes. The repo is public, so macOS runners are free. Push your branch
   and read the run's result rather than guessing whether it compiles. Keep the build path in step with
   ChoreLock's; don't restructure it.
 - Keep `swift-tools-version: 6.0` and the `Package.swift` product layout (one `.library` per bundle, the app's
   product name matching `product:` in xtool.yml).
 - `Modules/TippyModeration` builds and tests anywhere with Swift: `swift test --package-path Modules/TippyModeration`.
+- `scripts/check-architecture.py` checks the layering locally in a second; run it before pushing.
 - Work on a branch, open a pull request, and watch its checks.
 
 ## When you add a feature or fix a bug

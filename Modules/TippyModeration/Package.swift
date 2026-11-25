@@ -1,12 +1,13 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 
 import PackageDescription
 
-// The Moderation bounded context: drink servings and standard drinks, the
-// weekly goal and pace, and the pet's mood derived from them. Its own
-// package so it builds and tests on a Mac with nothing but Foundation, and
-// so the app depends on it rather than the other way round (the same shape
-// as ChoreLock's Household module).
+// The Moderation bounded context: the journal of drinks and drink-free
+// days, weeks and their summaries, the pet's mood, and the reminder plan.
+// Foundation only, so it builds and tests on any Mac (or Linux) with Swift,
+// and the app depends on it rather than the other way round. It compiles
+// in the Swift 6 language mode: full data-race checking. See
+// docs/architecture.md.
 let package = Package(
     name: "TippyModeration",
     platforms: [
@@ -14,7 +15,6 @@ let package = Package(
         .macOS(.v13),
     ],
     products: [
-        // Domain: Foundation only.
         .library(name: "TippyModeration", targets: ["TippyModeration"]),
     ],
     targets: [
@@ -23,5 +23,6 @@ let package = Package(
             name: "TippyModerationTests",
             dependencies: ["TippyModeration"]
         ),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )

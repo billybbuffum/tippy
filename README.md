@@ -19,8 +19,14 @@ Package.swift                      SwiftPM manifest: one library product per bun
 xtool.yml                          app (+ future extension) bundle wiring
 Config/Info.plist                  keys merged on top of xtool's defaults
 Assets/DefaultIcon.png             the home-screen icon (original placeholder art)
-Modules/TippyModeration/           the Moderation context: Foundation-only domain + tests (standard drinks, pace, mood)
-Sources/Tippy/                     the app (SwiftUI)
+Modules/TippyModeration/           Moderation context (domain): Foundation-only, Swift 6 mode, unit-tested
+Sources/Tippy/App/                 composition root (TippyApp) and RootView
+Sources/Tippy/Model/               application layer: JournalModel, ports
+Sources/Tippy/Adapters/            port implementations (file store, notifications)
+Sources/Tippy/Views/<Feature>/     SwiftUI, one folder per feature
+Sources/Tippy/Demo/                UI smoke test demo mode: seeds, fixed clock, stand-in adapters
+Sources/Tippy/Resources/Sprites/   the sprites the app ships, copied from Assets/Sprites by scripts/sync-sprites.py
+Assets/Sprites/                    source pixel art (see its README)
 scripts/resign.sh                  re-signs the CI-built IPA with a real development identity
 scripts/merge-entitlements.py      the entitlements each bundle is signed with
 scripts/install-page.sh            builds the GitHub Pages install page around that IPA
@@ -30,7 +36,8 @@ scripts/ui-smoke.sh                builds for the simulator, runs the scenarios,
 scripts/smoke-scenarios.py         lists the scenarios; which ones a PR changed; the required-scenario check
 scripts/ui-smoke-comment.py        writes the PR comment from results.json
 scripts/ui-smoke-publish.sh        keeps the GIFs on the pr-media branch, one directory per PR
-docs/                              research, product plan, server architecture rules
+scripts/check-architecture.py      enforces the layering rules of docs/architecture.md (CI: architecture.yml)
+docs/                              architecture (read first), research and plan, server rules
 ```
 
 ## Building and installing
@@ -92,21 +99,28 @@ ideviceinstaller install Tippy.ipa      # later builds: ideviceinstaller upgrade
 
 ## UI smoke test
 
-This works as in ChoreLock, except that it runs **automatically on every pull request** (each push included),
-not behind a `smoke` label. Every XCUITest scenario in `UISmoke/Tests/` runs on the simulator with a recording
+This works as in ChoreLock, except that it runs **automatically on every pull request** (each push included)
+that touches app code, tests or build config (`Sources/`, `Modules/`, `UISmoke/`, `Config/`, `Package.swift`,
+`xtool.yml`, the smoke scripts), not behind a `smoke` label. Docs-only and art-only pull requests skip it, and the
+`Build` workflow skips pushes that only change docs, Markdown or `Assets/Sprites/`. Every XCUITest scenario in `UISmoke/Tests/` runs on the simulator with a recording
 each, and a sticky PR comment shows "Feature demo" first (the scenarios the PR added or changed, GIFs inline),
 then the "Regression suite" table. **Smoke scenario present** (`smoke-scenario-check.yml`) fails a PR that
 changes `Sources/` or `Modules/` without adding or changing a scenario or carrying a `Smoke-demo:` line in its
 body. GIFs live on the orphan `pr-media` branch and are removed when the PR closes. A PR from a fork runs the
 scenarios and uploads the artifacts but gets no comment, because its token is read-only.
 
-Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`Sources/Tippy/UISmokeMode.swift`).
+Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`Sources/Tippy/Demo/UISmokeMode.swift`).
 `-ui-smoke-seed <name>` picks the starting state:
 
 | Seed | Starts with |
 |---|---|
-| `default` | a fresh week: nothing logged, goal of 14 |
-| `mid-week` | day 4, 6 standard drinks logged, checked in today |
+| `default` | set up already (pet "Sprout", goal 14, Monday weeks), nothing logged |
+| `onboarding` | first launch |
+| `mid-week` | 3 beers Monday, 3 Tuesday, Wednesday drink-free with a reflection, today not logged, reminder not offered yet |
+| `one-drink` | one beer logged today, nothing else |
+
+Every seed fixes the clock at Thursday 19 November 2026, 6 PM, keeps the journal in memory, and sends no
+notifications, so runs are repeatable.
 
 On a Mac with a current Xcode, run `brew install xcodegen ffmpeg`, then `scripts/ui-smoke.sh`. This writes `out/ui-smoke/`.
 `UI_SMOKE_ONLY="home log-drink"` runs a subset.

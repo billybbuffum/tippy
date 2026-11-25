@@ -12,6 +12,7 @@
 #   UI_SMOKE_ONLY     scenarios to run, space-separated (default: all);
 #                     names as scripts/smoke-scenarios.py list prints them
 #   UI_SMOKE_KEEP=1   leave the simulator booted afterwards
+#   UI_SMOKE_FFMPEG_PID  a background ffmpeg install to wait for before making GIFs (CI)
 #
 # Writes to the output dir:
 #   results.json             one entry per scenario: status, seed, duration,
@@ -204,6 +205,11 @@ if [ "$TEST_STATUS" -ne 0 ]; then
 fi
 
 log "Converting the recordings"
+# CI installs ffmpeg in the background while the app builds (ui-smoke.yml);
+# wait for that install to finish before looking for it.
+if [ -n "${UI_SMOKE_FFMPEG_PID:-}" ]; then
+  while kill -0 "$UI_SMOKE_FFMPEG_PID" 2> /dev/null; do sleep 2; done
+fi
 convert_clip() {
   local mov=$1 name
   name=$(basename "$mov" .mov)

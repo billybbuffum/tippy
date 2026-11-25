@@ -69,7 +69,7 @@ final class HomeScenarios: SmokeScenario {
         launch(seed: .midWeek)
         screen("offer", element("reminder-offer-card"))
         element("reminder-offer-accept-button").tap()
-        XCTAssertTrue(element("reminder-offer-card").waitForNonExistence(withTimeout: 5), "the offer goes away once answered")
+        XCTAssertTrue(element("reminder-offer-card").waitForNonExistence(timeout: 5), "the offer goes away once answered")
         screen("accepted", app.navigationBars["Tippy"])
     }
 }

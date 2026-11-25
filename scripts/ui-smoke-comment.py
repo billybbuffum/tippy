@@ -165,7 +165,7 @@ def main():
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lines.append(
         f"<sub>Commit {args.sha[:7]} on {results.get('device', 'simulator')}, run #{args.run_number}, {stamp}. "
-        "Runs when the `smoke` label is added; remove and re-add it to run again.</sub>"
+        "Runs on every push to the pull request.</sub>"
     )
     print("\n".join(lines))
 

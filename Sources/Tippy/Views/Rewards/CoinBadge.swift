@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// The coin balance in Home's toolbar. VoiceOver reads it as "120 coins".
-/// Tapping it does nothing yet: spec 02 opens the shop from here.
+/// Tapping it opens the shop.
 ///
 /// It's a container rather than a `Button`, so that both identifiers reach the
 /// UI tests: a button merges its label into one element and drops the inner
 /// `coin-balance-label`.
 struct CoinBadge: View {
     let balance: Int
+    var openShop: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 4) {
@@ -21,7 +22,11 @@ struct CoinBadge: View {
         }
         .padding(.horizontal, 4)
         .contentShape(Rectangle())
+        .onTapGesture(perform: openShop)
         .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Opens the shop")
+        .accessibilityAction(named: "Open the shop", openShop)
         .accessibilityIdentifier("coin-badge-button")
     }
 }

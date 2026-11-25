@@ -74,11 +74,43 @@ final class RewardsModel {
         return true
     }
 
-    /// Grants a decoration found on the Wander, once per key.
+    /// Grants a decoration found on the Wander, once per key. True if it was new.
     @discardableResult
     func grant(itemID: String, key: AwardKey) -> Bool {
-        // spec 02: record the grant in the ledger (owned items) through `mutate`.
-        false
+        var granted = false
+        mutate { granted = $0.grant(itemID, key: key) }
+        return granted
+    }
+
+    // MARK: Camp
+
+    func owns(_ itemID: String) -> Bool { ledger.owns(itemID) }
+
+    func canAfford(_ item: CatalogItem) -> Bool { ledger.balance >= item.price }
+
+    func item(in slotID: String) -> CatalogItem? { ledger.item(in: slotID).flatMap(CampCatalog.item) }
+
+    /// Owned items not placed anywhere, optionally only those that fit `kind`.
+    func storedItems(fitting kind: SlotKind? = nil) -> [CatalogItem] {
+        ledger.storedItems().compactMap(CampCatalog.item).filter { kind == nil || $0.kind == kind }
+    }
+
+    /// Buys an item. A repeat tap on something already bought is ignored
+    /// quietly rather than reported. True when the purchase was recorded.
+    @discardableResult
+    func buy(_ itemID: String) -> Bool {
+        guard !ledger.owns(itemID) else { return false }
+        let now = clock()
+        return mutate { try $0.buy(itemID, at: now) }
+    }
+
+    @discardableResult
+    func place(_ itemID: String, in slotID: String) -> Bool {
+        mutate { try $0.place(itemID, in: slotID) }
+    }
+
+    func store(slotID: String) {
+        mutate { $0.store(slotID: slotID) }
     }
 
     /// The recap was seen; `nextWeekIdea` is her optional idea for the week after.
@@ -107,6 +139,9 @@ final class RewardsModel {
         var copy = ledger
         do {
             try change(&copy)
+        } catch let problem as RewardsLedger.Problem {
+            message = problem.message
+            return false
         } catch {
             message = error.localizedDescription
             return false
@@ -119,5 +154,19 @@ final class RewardsModel {
             message = "Couldn't save your coins: \(error.localizedDescription)"
         }
         return true
+    }
+}
+
+extension RewardsLedger.Problem {
+    var message: String {
+        switch self {
+        case .unknownItem: return "That decoration isn't in the catalog."
+        case .notForSale: return "That one can't be bought; it's found on the Wander."
+        case .alreadyOwned: return "You already have that one."
+        case .insufficientCoins: return "Not enough coins for that yet. Every check-in earns more."
+        case .notOwned: return "Buy or find that decoration first."
+        case .unknownSlot: return "That spot isn't in the camp."
+        case .wrongSlotKind: return "That decoration doesn't fit in that spot."
+        }
     }
 }

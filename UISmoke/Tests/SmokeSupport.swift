@@ -34,6 +34,8 @@ class SmokeScenario: XCTestCase {
         case lastWeekDone = "last-week-done"
         /// `default` plus 120 coins.
         case coins
+        /// 60 coins; lantern, sprout, seashell and lily planter placed, the mushroom in storage.
+        case furnishedCamp = "furnished-camp"
         /// Onboarded, nothing logged, the starter egg in the nest (every
         /// other seed has hatched the pondling already).
         case eggReady = "egg-ready"

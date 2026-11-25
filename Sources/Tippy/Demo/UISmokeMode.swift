@@ -44,6 +44,9 @@ enum UISmokeMode {
         case lastWeekDone = "last-week-done"
         /// The `default` seed plus 120 coins (synthetic awards). Spec 02 uses it.
         case coins
+        /// 60 coins; owns the lantern, sprout, seashell, mushroom and lily planter,
+        /// with all but the mushroom placed (spec 02).
+        case furnishedCamp = "furnished-camp"
         /// Onboarded, nothing logged, and no Wander saved yet, so the
         /// starter egg is in the nest (every other seed has hatched it).
         case eggReady = "egg-ready"
@@ -114,7 +117,7 @@ enum UISmokeMode {
         switch seed {
         case .onboarding:
             return nil
-        case .default, .coins:
+        case .default, .coins, .furnishedCamp:
             journal = Journal(settings: settings)
         case .midWeek:
             let monday = today.adding(days: -3)
@@ -198,6 +201,18 @@ enum UISmokeMode {
                 Award(key: .pouch("demo-\(number)"), coins: 20, earnedOn: LocalDate(year: 2026, month: 10, day: number)!)
             }
             return RewardsLedger(awards: awards)
+        case .furnishedCamp:
+            // Seven synthetic pouches of 22 (154 coins), 94 spent on five items.
+            let awards = (1...7).compactMap { number in
+                Award(key: .pouch("demo-\(number)"), coins: 22, earnedOn: LocalDate(year: 2026, month: 10, day: number)!)
+            }
+            let bought = ["lantern", "sprout", "seashell", "mushroom", "lily-planter"].compactMap(CampCatalog.item)
+            let purchases = bought.map { Purchase(itemID: $0.id, price: $0.price, at: now.addingTimeInterval(-86_400)) }
+            return RewardsLedger(
+                awards: awards,
+                purchases: purchases,
+                placements: ["light-1": "lantern", "ground-1": "sprout", "ground-4": "seashell", "water-1": "lily-planter"]
+            )
         case .lastWeekDone:
             // As if the app had synced on each day of last week as she logged it:
             // every check-in and drink-free award, but not the week's goal bonus,
@@ -221,7 +236,7 @@ enum UISmokeMode {
         switch seed {
         case .onboarding, .eggReady:
             return nil
-        case .default, .midWeek, .oneDrink, .lastWeekDone, .coins:
+        case .default, .midWeek, .oneDrink, .lastWeekDone, .coins, .furnishedCamp:
             let pondling = Pet(
                 id: WanderState.starterEggID,
                 speciesID: Species.pondling.id,

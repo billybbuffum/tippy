@@ -17,18 +17,22 @@ struct SettingsView: View {
                         .accessibilityIdentifier("pet-name-field")
                 }
                 Section {
-                    Stepper(value: setting(\.weeklyGoal), in: 0...70, step: 1) {
-                        Text("Weekly goal: \(Int(model.settings.weeklyGoal)) drinks")
+                    Stepper(value: goalBinding, in: 0...70, step: 1) {
+                        Text("Weekly goal: \(Int(model.currentGoal)) drinks")
                     }
                     .accessibilityIdentifier("weekly-goal-stepper")
                     Stepper(value: setting(\.baselinePerWeek), in: 0...150, step: 1) {
                         Text("Before Tippy: \(Int(model.settings.baselinePerWeek)) a week")
                     }
                     .accessibilityIdentifier("baseline-stepper")
-                    Stepper(value: setting(\.costPerDrink), in: 0...100, step: 0.5) {
-                        Text("Cost per drink: \(model.settings.costPerDrink.formatted(.currency(code: currencyCode)))")
+                    Toggle("Track what drinks cost", isOn: costTracked)
+                        .accessibilityIdentifier("cost-toggle")
+                    if let cost = model.settings.costPerDrink {
+                        Stepper(value: costBinding, in: 0...100, step: 0.5) {
+                            Text("Cost per drink: \(cost.formatted(.currency(code: currencyCode)))")
+                        }
+                        .accessibilityIdentifier("cost-stepper")
                     }
-                    .accessibilityIdentifier("cost-stepper")
                     Picker("Weeks start on", selection: setting(\.firstWeekday)) {
                         Text("Monday").tag(2)
                         Text("Sunday").tag(1)
@@ -37,7 +41,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Goal")
                 } footer: {
-                    Text("Counted in US standard drinks (14 g of alcohol).")
+                    Text("Counted in US standard drinks (14 g of alcohol). A new goal applies from this week on; past weeks keep theirs.")
                 }
                 Section("Reminder") {
                     Toggle("Daily reminder", isOn: remindersBinding)
@@ -108,6 +112,24 @@ struct SettingsView: View {
         Binding(
             get: { model.settings[keyPath: keyPath] },
             set: { value in model.updateSettings { $0[keyPath: keyPath] = value } }
+        )
+    }
+
+    private var goalBinding: Binding<Double> {
+        Binding(get: { model.currentGoal }, set: { model.setWeeklyGoal($0) })
+    }
+
+    private var costTracked: Binding<Bool> {
+        Binding(
+            get: { model.settings.costPerDrink != nil },
+            set: { on in model.updateSettings { $0.costPerDrink = on ? 8 : nil } }
+        )
+    }
+
+    private var costBinding: Binding<Double> {
+        Binding(
+            get: { model.settings.costPerDrink ?? 8 },
+            set: { value in model.updateSettings { $0.costPerDrink = value } }
         )
     }
 

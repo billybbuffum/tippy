@@ -1,8 +1,8 @@
 import XCTest
 
-/// History and back-filling. One scenario per method; see SmokeSupport.swift.
+/// History, editing and back-filling. One scenario per method; see SmokeSupport.swift.
 final class HistoryScenarios: SmokeScenario {
-    /// The week's days: drinks on Monday and Tuesday, Wednesday drink-free.
+    /// The week's days: drinks Monday and Tuesday, Wednesday drink-free with a reflection.
     func testHistory() {
         launch(seed: .midWeek)
         screen("home", app.navigationBars["Tippy"])
@@ -10,9 +10,39 @@ final class HistoryScenarios: SmokeScenario {
         screen("history", app.navigationBars["History"])
         XCTAssertTrue(element("history-drink-free-row").exists)
         XCTAssertTrue(element("history-entry-row").exists)
+        XCTAssertTrue(element("history-reflection-row").exists)
         pause()
         goBack(from: "History")
         screen("home-again", app.navigationBars["Tippy"])
+    }
+
+    /// Tap a drink to edit it: change it to wine.
+    func testEditDrink() {
+        launch(seed: .midWeek)
+        screen("home", app.navigationBars["Tippy"])
+        element("history-button").tap()
+        screen("history", app.navigationBars["History"])
+        element("history-entry-row").tap()
+        screen("edit", app.navigationBars["Edit drink"])
+        element("drink-kind-wine").tap()
+        pause()
+        element("save-drink-button").tap()
+        screen("edited", app.navigationBars["History"])
+    }
+
+    /// Deleting a day's only drink asks what the day becomes: drink-free.
+    func testDeleteLastDrink() {
+        launch(seed: .oneDrink)
+        screen("home", app.navigationBars["Tippy"])
+        element("history-button").tap()
+        screen("history", app.navigationBars["History"])
+        element("history-entry-row").tap()
+        screen("edit", app.navigationBars["Edit drink"])
+        reveal(element("delete-drink-button"))
+        element("delete-drink-button").tap()
+        tapDialogButton("empty-day-drink-free-button", title: "Mark the day drink-free")
+        screen("now-drink-free", element("history-drink-free-row"))
+        XCTAssertFalse(element("history-entry-row").exists)
     }
 
     /// Mark a day drink-free from History.

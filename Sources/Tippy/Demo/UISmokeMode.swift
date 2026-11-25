@@ -26,8 +26,11 @@ enum UISmokeMode {
         /// First launch: onboarding.
         case onboarding
         /// Thursday of a week with 3 beers Monday, 3 Tuesday, Wednesday
-        /// drink-free, today not logged yet.
+        /// drink-free with a reflection, today not logged yet; the reminder
+        /// not offered yet.
         case midWeek = "mid-week"
+        /// One beer logged today, nothing else; the reminder already offered.
+        case oneDrink = "one-drink"
     }
 
     /// The seed this launch asked for; `default` when none was named. An
@@ -70,22 +73,35 @@ enum UISmokeMode {
         var settings = ModerationSettings()
         settings.hasOnboarded = true
         let today = LocalDate(now, calendar: calendar)
+        func beer(on day: LocalDate, number: Int) -> DrinkEntry {
+            let at = day.startDate(in: calendar).addingTimeInterval(19 * 3600 + Double(number) * 1800)
+            return DrinkEntry(day: day, loggedAt: at, kind: .beer, amount: 12, unit: .fluidOunce, abvPercent: 5)
+        }
+        var journal: Journal
         switch seed {
         case .onboarding:
             return nil
         case .default:
-            return Journal(settings: settings)
+            journal = Journal(settings: settings)
         case .midWeek:
             let monday = today.adding(days: -3)
+            let wednesday = monday.adding(days: 2)
             var entries: [DrinkEntry] = []
-            for (dayOffset, count) in [(0, 3), (1, 3)] {
-                let day = monday.adding(days: dayOffset)
-                for n in 0..<count {
-                    let at = day.startDate(in: calendar).addingTimeInterval(19 * 3600 + Double(n) * 1800)
-                    entries.append(DrinkEntry(day: day, loggedAt: at, kind: .beer, serving: .beer))
-                }
+            for dayOffset in 0..<2 {
+                for number in 0..<3 { entries.append(beer(on: monday.adding(days: dayOffset), number: number)) }
             }
-            return Journal(settings: settings, entries: entries, drinkFreeDays: [monday.adding(days: 2)])
+            let reflection = Reflection(
+                day: wednesday,
+                promptID: ReflectionPrompts.prompt(for: wednesday, hadDrinks: false).id,
+                answer: "A long walk by the river.",
+                answeredAt: wednesday.startDate(in: calendar).addingTimeInterval(21 * 3600)
+            )
+            journal = Journal(settings: settings, entries: entries, drinkFreeDays: [wednesday], reflections: [reflection])
+        case .oneDrink:
+            settings.reminderOffered = true
+            journal = Journal(settings: settings, entries: [beer(on: today, number: 0)])
         }
+        journal.setWeeklyGoal(14, from: journal.week(containing: today))
+        return journal
     }
 }

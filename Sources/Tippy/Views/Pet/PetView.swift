@@ -1,10 +1,59 @@
 import SwiftUI
 import TippyModeration
 
-/// The pet: an original round critter with ears and a leaf sprout, drawn
-/// in code. Its face and the glow behind it follow its mood. It never
-/// looks sick or sad, only sleepy at worst.
+/// The pet: the teal pond creature from the sprite pack, in the pose for its
+/// mood. Happy breathes and thriving hops; the other moods hold still, as
+/// does everything under Reduce Motion. It never looks sick or sad.
 struct PetView: View {
+    let mood: PetMood
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Group {
+            if let animation, MotionAllowed(reduceMotion: reduceMotion).value {
+                AnimatedSprite(animation: animation)
+            } else if SpriteLibrary.image("Pet/\(mood.rawValue)") != nil {
+                SpriteImage(path: "Pet/\(mood.rawValue)")
+            } else {
+                DrawnPet(mood: mood)
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .background(Circle().fill(mood.color.opacity(0.18)).padding(8))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Your pet is \(mood.rawValue)")
+    }
+
+    private var animation: SpriteAnimation? {
+        switch mood {
+        case .happy: return .petIdle
+        case .thriving: return .petHop
+        case .okay, .concerned, .waiting: return nil
+        }
+    }
+}
+
+/// The egg, wiggling unless motion is reduced.
+struct EggView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Group {
+            if MotionAllowed(reduceMotion: reduceMotion).value {
+                AnimatedSprite(animation: .eggWiggle)
+            } else {
+                SpriteImage(path: "Pet/egg")
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Your pet's egg")
+    }
+}
+
+/// The drawn stand-in for the pet, used only if a sprite is missing from the
+/// bundle: an original round critter whose face follows its mood.
+struct DrawnPet: View {
     let mood: PetMood
     @State private var bobbing = false
 

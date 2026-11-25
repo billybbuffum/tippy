@@ -33,7 +33,7 @@ ALLOWED = {
     "domain": {"Foundation"},
     "model": {"Foundation", "Observation"},
     "adapters": {"Foundation", "UserNotifications", "CloudKit", "HealthKit", "WidgetKit", "os"},
-    "views": {"SwiftUI", "Foundation", "UniformTypeIdentifiers", "Charts", "Observation"},
+    "views": {"SwiftUI", "UIKit", "Foundation", "UniformTypeIdentifiers", "Charts", "Observation"},
     "app": {"SwiftUI", "Foundation", "Observation"},
     "demo": {"Foundation"},
 }

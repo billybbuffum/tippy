@@ -43,7 +43,7 @@ ports and the domain. The domain knows nothing outside itself.
 | **Domain** | `Modules/<Context>/Sources/<Context>/` (one Swift package per bounded context) | `Foundation`, and contexts its `Package.swift` depends on | Entities, value objects, aggregates, domain services, repository ports, codecs |
 | **Application** | `Sources/Tippy/Model/` | `Foundation`, `Observation`, contexts | `@MainActor @Observable` models (use cases + observable state), application ports (`Ports.swift`) |
 | **Adapters** | `Sources/Tippy/Adapters/` | `Foundation`, platform frameworks (`UserNotifications`, later `WidgetKit`, `HealthKit`, `CloudKit`), contexts | One port implementation per file |
-| **Presentation** | `Sources/Tippy/Views/<Feature>/` | `SwiftUI`, `Charts`, `UniformTypeIdentifiers`, contexts | Views, view-only helpers (`Views/Shared/`) |
+| **Presentation** | `Sources/Tippy/Views/<Feature>/` | `SwiftUI`, `UIKit` (images only), `Charts`, `UniformTypeIdentifiers`, contexts | Views, view-only helpers (`Views/Shared/`), sprite loading |
 | **Composition** | `Sources/Tippy/App/` | `SwiftUI`, `Foundation` | `TippyApp` (composition root), `RootView` (top-level routing and alerts) |
 | **Demo** | `Sources/Tippy/Demo/` | `Foundation`, contexts | `UISmokeMode` (seeds, fixed clock), in-memory and silent stand-in adapters |
 
@@ -71,6 +71,8 @@ goes here, with a unit test.
   to the app (an extension in `Model/`), never the domain.
 - **Domain services** are stateless `enum`s with `static` functions when a rule spans several values
   (`MoodPolicy`, `ReminderPlanner`).
+- **Bundled content catalogs** (reflection prompts now; shop items and the Wander's trail later) live in the
+  domain as static data with **stable string IDs**, because saved records refer to them. Never reuse or rename an ID.
 - **No ambient state.** No `Date()`, no `Calendar.current`, no `UserDefaults`, no singletons. "Today" and the
   calendar are parameters, so every rule is deterministic and testable.
 - **Repository ports live with their aggregate** (`JournalStore` beside `Journal`). The domain also owns its
@@ -81,7 +83,7 @@ goes here, with a unit test.
 
 - **One model per bounded context**, named `<Context>Model` (`JournalModel`). It's a `@MainActor @Observable final
   class` that does three things:
-  - exposes **derived state** as computed properties over the domain (`summary`, `mood`, `streak`), never
+  - exposes **derived state** as computed properties over the domain (`summary`, `mood`, `currentGoal`), never
     duplicated stored copies;
   - provides **intent methods**, one per use case (`log(kind:serving:on:)`, `markDrinkFree(_:)`,
     `updateSettings(_:)`). Each one validates through the aggregate, saves through the port, then runs side
@@ -146,16 +148,19 @@ goes here, with a unit test.
 
 | Context | Package | Owns | Status |
 |---|---|---|---|
-| **Moderation** | `TippyModeration` | Journal of drink entries and drink-free days, settings, weeks and summaries, streak, pet mood, reminder plan | Built |
-| **Rewards** | `TippyRewards` | Coins, the shop catalogue, purchases, decorations placed in the pet's home, weekly recaps | Next |
-| **Insights** | `TippyInsights` | Charts data, money saved, trends | Planned |
+| **Moderation** | `TippyModeration` | The journal: drink entries, drink-free days, reflections, the weekly goal per week, settings, week summaries, pet mood, reminder plan | Built |
+| **Rewards** | `TippyRewards` | The coin ledger, the shop catalog, purchases, decorations placed in the camp, weekly recaps | Next |
+| **Wander** | `TippyWander` | The step ledger, the trail (areas, landmarks, finds), eggs, hatching, the pet collection, the active pet | Planned |
 
 Rules between contexts:
-- **Downstream contexts read upstream facts through public API only.** Rewards and Insights depend on Moderation
-  (they read the `Journal`'s check-ins and week summaries). Moderation never depends on them.
-- **Derive, don't duplicate.** Coins earned are computed from Moderation's facts (check-ins, weeks that met the
-  goal) by a Rewards domain service. Rewards stores only what it alone knows (purchases, placements, which weeks
-  were recapped). This makes double-awarding impossible and lets a backup restore everything.
+- **Downstream contexts read upstream facts through public API only.** Rewards and Wander depend on Moderation
+  (check-ins, drink-free days, reflections, week summaries). Moderation never depends on them, and Rewards and Wander
+  don't depend on each other. The app's models coordinate them.
+- **Awards are recorded once, keyed by the fact that earned them, and never revoked.** Coins and steps live in
+  ledgers whose keys name their source (`checkIn:2026-11-19`, `drinkFree:2026-11-19`, `weekGoal:2026-11-16`,
+  `reflection:2026-11-19`). Recording an award whose key exists is a no-op, so retries, relaunches and edits can't
+  duplicate one, and later edits or deletions never take one back. Balances are derived from the ledger (earned
+  minus spent), never stored.
 - **Each context has its own aggregate, repository port, file and model** (`RewardsModel` with its own
   `rewards.json`). A model may read another context's model, injected through its initializer, but changes it
   only through that model's intent methods.
@@ -175,6 +180,15 @@ Rules between contexts:
 - **Breaking changes** bump `currentVersion` and add a migration step in the codec, with a test per step.
 - A file from a newer version is refused, never half-read.
 - A backup is the codec's output, so export and restore can't drift from storage.
+
+**Art and other resources**
+- Source art lives in `Assets/Sprites/` (see its README for sizes, frame strips and timings). The app ships only
+  the files listed in `scripts/sync-sprites.py`, copied into `Sources/Tippy/Resources/Sprites/`, which SwiftPM
+  bundles and xtool packs. CI fails if a copy drifts from its source.
+- Views load sprites only through `SpriteLibrary` (`Views/Shared/Sprites.swift`), drawn with nearest-neighbour
+  scaling (`.interpolation(.none)`). Looping animations play only when Reduce Motion is off and not in demo mode;
+  otherwise the still pose shows.
+- All art is original or CC0; never Tipple's.
 
 **Errors**
 - Domain errors are typed. The model turns them into one `message` that `RootView` shows.
@@ -250,18 +264,20 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | Term | Meaning | In code |
 |---|---|---|
 | **Journal** | Everything the user has logged plus their settings; the Moderation aggregate | `Journal` |
-| **Drink entry** | One logged drink: kind, volume, ABV, the day it counts towards | `DrinkEntry` |
+| **Drink entry** | One logged drink as entered: kind, amount and unit, ABV, optional standard-drink override, the day it counts towards | `DrinkEntry`, `VolumeUnit` |
 | **Drink kind** | Beer, wine, cocktail, shot (`spirit`), seltzer, other; each with a typical serving | `DrinkKind` |
 | **Serving** | Volume and strength of one drink | `DrinkServing` |
 | **Standard drink** | 14 g of pure alcohol (US). A *UK unit* is 8 g | `standardDrinks`, `StandardDrink` |
 | **Day** | A calendar day with no time zone | `LocalDate` |
 | **Week** | Seven days starting on the user's first weekday | `Week`, `firstWeekday` |
-| **Weekly goal** | Maximum standard drinks per week | `weeklyGoal` |
+| **Weekly goal** | Maximum standard drinks per week, kept per week: a change applies from the current week on | `goal(for:)`, `setWeeklyGoal`, `goalHistory` |
 | **Baseline** | Standard drinks in a typical week before Tippy | `baselinePerWeek` |
 | **Check-in** | Logging a day, with drink entries or as a drink-free day | `isCheckedIn` |
 | **Drink-free day** | A day checked in with no drinks; never also has entries | `markDrinkFree`, `drinkFreeDays` |
 | **Back-fill** | Logging an earlier day | the `on:` day of `log` |
-| **Streak** | Consecutive checked-in days up to today; an unlogged today doesn't break it | `streak(today:)` |
+| **Empty-day choice** | What a day becomes when its last drink is deleted: drink-free or cleared (unlogged) | `EmptyDayChoice` |
+| **Reflection** | Her optional answer to the day's prompt, kept with the logged day | `Reflection`, `ReflectionPrompts` |
+| **Days logged** | Checked-in days so far this week (nothing resets) | `checkedInDays` |
 | **Week summary** | A week's total, goal, drink-free days, days elapsed | `WeekSummary` |
 | **Pace** | Standard drinks so far ÷ the pro-rated weekly goal | `pace` |
 | **Mood** | The pet's state from pace and check-ins: thriving, happy, okay, concerned, waiting | `PetMood`, `MoodPolicy` |
@@ -269,6 +285,9 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Reminder** | The evening nudge on a day not yet checked in | `ReminderPlanner`, `ReminderScheduling` |
 | **Backup** | The journal exported as a file; restoring replaces everything | `JournalCodec`, `exportBackup` |
 | **Onboarding** | The first-launch questions | `hasOnboarded`, `OnboardingView` |
-| **Coins** *(Rewards, next)* | Earned from check-ins, drink-free days and weeks that meet the goal; derived, never stored | — |
-| **Purchase**, **decoration** *(Rewards, next)* | Shop items bought with coins and placed in the pet's home | — |
-| **Weekly recap** *(Rewards, next)* | The summary shown once a week ends, awarding its coins | — |
+| **Camp** *(Rewards)* | Home: the pond where the active pet lives and decorations are placed | — |
+| **Coins** *(Rewards)* | Earned per check-in, with bonuses for drink-free days and weeks within the goal; recorded once per fact, never revoked | — |
+| **Decoration**, **purchase**, **placement** *(Rewards)* | A shop item; buying it; putting it in a camp spot (moving and storing are free) | — |
+| **Weekly recap** *(Rewards)* | The summary shown once a week ends, awarding its goal bonus | — |
+| **The Wander**, **step**, **landmark** *(Wander)* | The trail out from the pond; one step per check-in and per reflection; spots holding eggs, finds and visitors | — |
+| **Egg**, **hatch**, **collection**, **active pet** *(Wander)* | Found on the Wander, hatched after more check-ins, kept in the collection; the active pet is the one out in the camp | — |

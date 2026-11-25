@@ -6,8 +6,28 @@ extension Double {
     var drinksText: String { String(format: "%.1f", self) }
 }
 
-enum Units {
-    static let millilitersPerFluidOunce = 29.5735
+extension VolumeUnit {
+    var shortName: String {
+        switch self {
+        case .fluidOunce: return "fl oz"
+        case .milliliter: return "ml"
+        }
+    }
+
+    var step: Double { self == .fluidOunce ? 0.5 : 5 }
+
+    var amountRange: ClosedRange<Double> { self == .fluidOunce ? 0.5...64 : 5...2000 }
+
+    func rounded(_ amount: Double) -> Double {
+        let snapped = (amount / step).rounded() * step
+        return min(max(snapped, amountRange.lowerBound), amountRange.upperBound)
+    }
+}
+
+/// A day, usable as a sheet's item.
+struct DayItem: Identifiable {
+    let day: LocalDate
+    var id: LocalDate { day }
 }
 
 extension DrinkKind {
@@ -19,6 +39,16 @@ extension DrinkKind {
         case .spirit: return "Shot"
         case .seltzer: return "Seltzer"
         case .other: return "Other"
+        }
+    }
+
+    /// The sprite for this kind, when the sprite pack has one.
+    var spritePath: String? {
+        switch self {
+        case .beer, .seltzer: return "Drinks/beer"
+        case .wine: return "Drinks/wine"
+        case .cocktail: return "Drinks/cocktail"
+        case .spirit, .other: return nil
         }
     }
 
@@ -52,6 +82,19 @@ extension PetMood {
         case .okay: return .orange
         case .concerned: return .indigo
         case .waiting: return .gray
+        }
+    }
+}
+
+/// A drink kind's sprite, or its symbol when there is no sprite.
+struct DrinkIcon: View {
+    let kind: DrinkKind
+
+    var body: some View {
+        if let path = kind.spritePath, SpriteLibrary.image(path) != nil {
+            SpriteImage(path: path)
+        } else {
+            Image(systemName: kind.symbol).font(.title2)
         }
     }
 }

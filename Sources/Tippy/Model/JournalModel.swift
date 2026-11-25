@@ -58,10 +58,18 @@ final class JournalModel {
     var settings: ModerationSettings { journal.settings }
     var currentWeek: Week { journal.week(containing: today) }
     var summary: WeekSummary { journal.summary(of: currentWeek, today: today) }
-    var streak: Int { journal.streak(today: today) }
+    var currentGoal: Double { journal.goal(for: currentWeek) }
     var todaysDrinks: Double { journal.standardDrinks(on: today) }
     var isTodayDrinkFree: Bool { journal.isDrinkFree(today) }
     var isTodayLogged: Bool { journal.isCheckedIn(today) }
+
+    /// After the first check-in, until she answers it once.
+    var shouldOfferReminder: Bool { !settings.reminderOffered && !journal.loggedDays.isEmpty }
+
+    /// Today's (or a day's) reflection prompt: it depends on whether the day had drinks.
+    func prompt(for day: LocalDate) -> ReflectionPrompt {
+        ReflectionPrompts.prompt(for: day, hadDrinks: journal.hasDrinks(on: day))
+    }
 
     var reminderTimeToday: Date {
         calendar.date(bySettingHour: settings.reminderHour, minute: settings.reminderMinute, second: 0, of: now) ?? now
@@ -91,38 +99,84 @@ final class JournalModel {
         rescheduleReminders()
     }
 
-    func log(kind: DrinkKind, serving: DrinkServing, on day: LocalDate) {
-        let entry = DrinkEntry(day: day, loggedAt: now, kind: kind, serving: serving)
+    /// Logs a new drink. True when it was saved.
+    @discardableResult
+    func log(_ draft: DrinkDraft, on day: LocalDate) -> Bool {
+        let entry = DrinkEntry(
+            day: day, loggedAt: now, kind: draft.kind, amount: draft.amount, unit: draft.unit,
+            abvPercent: draft.abvPercent, standardDrinksOverride: draft.standardDrinksOverride
+        )
         let today = today
-        mutate { try $0.log(entry, today: today) }
+        return mutate { try $0.log(entry, today: today) }
     }
 
-    func delete(_ entry: DrinkEntry) {
-        mutate { $0.removeEntry(id: entry.id) }
-    }
-
-    func markDrinkFree(_ day: LocalDate) {
+    /// Saves an edited drink (same ID). True when it was saved.
+    @discardableResult
+    func update(_ entry: DrinkEntry, with draft: DrinkDraft, on day: LocalDate) -> Bool {
+        var edited = entry
+        edited.day = day
+        edited.kind = draft.kind
+        edited.amount = draft.amount
+        edited.unit = draft.unit
+        edited.abvPercent = draft.abvPercent
+        edited.standardDrinksOverride = draft.standardDrinksOverride
         let today = today
-        mutate { try $0.markDrinkFree(day, today: today) }
+        return mutate { try $0.update(edited, today: today) }
     }
 
-    func clearDrinkFree(_ day: LocalDate) {
-        mutate { $0.clearDrinkFree(day) }
+    func isOnlyEntryOnItsDay(_ entry: DrinkEntry) -> Bool {
+        journal.isOnlyEntryOnItsDay(entry.id)
+    }
+
+    /// Deletes a drink; `choice` decides the day's fate if it was the last.
+    func delete(_ entry: DrinkEntry, ifDayEmpties choice: Journal.EmptyDayChoice) {
+        mutate { try $0.removeEntry(id: entry.id, ifDayEmpties: choice) }
+    }
+
+    @discardableResult
+    func markDrinkFree(_ day: LocalDate) -> Bool {
+        let today = today
+        return mutate { try $0.markDrinkFree(day, today: today) }
+    }
+
+    func clearDay(_ day: LocalDate) {
+        mutate { $0.clearDay(day) }
+    }
+
+    @discardableResult
+    func reflect(on day: LocalDate, answer: String) -> Bool {
+        let dayPrompt = prompt(for: day)
+        let now = now
+        let today = today
+        return mutate { try $0.reflect(on: day, prompt: dayPrompt, answer: answer, at: now, today: today) }
+    }
+
+    /// Sets the goal from this week on; earlier weeks keep theirs.
+    func setWeeklyGoal(_ goal: Double) {
+        let week = currentWeek
+        mutate { $0.setWeeklyGoal(goal, from: week) }
     }
 
     func updateSettings(_ change: (inout ModerationSettings) -> Void) {
         mutate { change(&$0.settings) }
     }
 
-    func completeOnboarding(with draft: ModerationSettings) async {
+    /// The one-time reminder offer, answered.
+    func answerReminderOffer(accept: Bool) async {
+        if accept { await setRemindersEnabled(true) }
+        updateSettings { $0.reminderOffered = true }
+    }
+
+    func completeOnboarding(with draft: ModerationSettings, weeklyGoal: Double) {
         var settings = draft
         settings.petName = settings.petName.trimmingCharacters(in: .whitespacesAndNewlines)
         if settings.petName.isEmpty { settings.petName = ModerationSettings.defaultPetName }
-        if settings.reminderEnabled {
-            settings.reminderEnabled = await reminders.requestAuthorization()
-        }
         settings.hasOnboarded = true
-        updateSettings { $0 = settings }
+        let week = currentWeek
+        mutate {
+            $0.settings = settings
+            $0.setWeeklyGoal(weeklyGoal, from: week)
+        }
     }
 
     func setRemindersEnabled(_ enabled: Bool) async {
@@ -158,16 +212,20 @@ final class JournalModel {
 
     // MARK: Plumbing
 
-    private func mutate(_ change: (inout Journal) throws -> Void) {
+    /// The single path for every change: apply it to a copy through the
+    /// aggregate, commit on success, save, then run follow-up effects.
+    /// Returns false (with `message` set) when the change was refused.
+    @discardableResult
+    private func mutate(_ change: (inout Journal) throws -> Void) -> Bool {
         var copy = journal
         do {
             try change(&copy)
         } catch let problem as Journal.Problem {
             message = problem.message
-            return
+            return false
         } catch {
             message = error.localizedDescription
-            return
+            return false
         }
         journal = copy
         do {
@@ -176,6 +234,7 @@ final class JournalModel {
             message = "Couldn't save: \(error.localizedDescription)"
         }
         rescheduleReminders()
+        return true
     }
 
     private func rescheduleReminders() {
@@ -203,6 +262,47 @@ extension Journal.Problem {
         switch self {
         case .futureDay: return "That day hasn't happened yet."
         case .dayHasDrinks: return "That day already has drinks logged. Delete them in History first."
+        case .invalidEntry: return "That amount or strength doesn't look right."
+        case .unknownEntry: return "That drink was already removed."
+        case .dayNotLogged: return "Log the day first, then add a reflection."
+        case .emptyAnswer: return "Write something, or tap Skip."
         }
+    }
+}
+
+/// A drink as the log form holds it, before it becomes an entry.
+struct DrinkDraft: Equatable {
+    var kind: DrinkKind
+    var amount: Double
+    var unit: VolumeUnit
+    var abvPercent: Double
+    var standardDrinksOverride: Double?
+
+    /// The kind's typical serving, in `unit`, rounded to a friendly step.
+    static func typical(_ kind: DrinkKind, in unit: VolumeUnit) -> DrinkDraft {
+        let serving = kind.defaultServing
+        let raw = serving.volumeMilliliters / unit.milliliters
+        let amount = unit == .fluidOunce ? (raw * 2).rounded() / 2 : (raw / 5).rounded() * 5
+        return DrinkDraft(kind: kind, amount: amount, unit: unit, abvPercent: serving.abvPercent)
+    }
+
+    init(kind: DrinkKind, amount: Double, unit: VolumeUnit, abvPercent: Double, standardDrinksOverride: Double? = nil) {
+        self.kind = kind
+        self.amount = amount
+        self.unit = unit
+        self.abvPercent = abvPercent
+        self.standardDrinksOverride = standardDrinksOverride
+    }
+
+    init(_ entry: DrinkEntry) {
+        self.init(kind: entry.kind, amount: entry.amount, unit: entry.unit, abvPercent: entry.abvPercent,
+                  standardDrinksOverride: entry.standardDrinksOverride)
+    }
+
+    var entryPreview: DrinkEntry? {
+        let preview = DrinkEntry(day: LocalDate(year: 2000, month: 1, day: 1)!, loggedAt: Date(timeIntervalSince1970: 0),
+                                 kind: kind, amount: amount, unit: unit, abvPercent: abvPercent,
+                                 standardDrinksOverride: standardDrinksOverride)
+        return preview.isValid ? preview : nil
     }
 }

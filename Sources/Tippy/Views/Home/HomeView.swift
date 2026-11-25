@@ -5,6 +5,7 @@ struct HomeView: View {
     @Environment(JournalModel.self) private var model
     @State private var showingLog = false
     @State private var showingSettings = false
+    @State private var reflecting: DayItem?
 
     var body: some View {
         NavigationStack {
@@ -22,8 +23,11 @@ struct HomeView: View {
                             .multilineTextAlignment(.center)
                             .accessibilityIdentifier("pet-mood-label")
                     }
-                    WeekCard(summary: model.summary, streak: model.streak)
+                    WeekCard(summary: model.summary)
                     todayCard
+                    if model.shouldOfferReminder {
+                        ReminderOfferCard()
+                    }
                 }
                 .padding()
             }
@@ -52,6 +56,7 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingLog) { LogDrinkView() }
             .sheet(isPresented: $showingSettings) { SettingsView() }
+            .sheet(item: $reflecting) { item in ReflectionSheet(day: item.day) }
         }
     }
 
@@ -85,7 +90,10 @@ struct HomeView: View {
             .controlSize(.large)
             .accessibilityIdentifier("log-drink-button")
             Button {
-                model.markDrinkFree(model.today)
+                let today = model.today
+                if model.markDrinkFree(today), model.journal.reflection(on: today) == nil {
+                    reflecting = DayItem(day: today)
+                }
             } label: {
                 Label(model.isTodayDrinkFree ? "Drink-free today" : "No drinks today", systemImage: "leaf")
                     .frame(maxWidth: .infinity)
@@ -101,10 +109,10 @@ struct HomeView: View {
     }
 }
 
-/// This week at a glance: a ring of the goal used, and the numbers.
+/// This week at a glance: a ring of the goal used, and the numbers, in
+/// neutral words (the pet carries the feelings).
 struct WeekCard: View {
     let summary: WeekSummary
-    let streak: Int
 
     var body: some View {
         HStack(spacing: 18) {
@@ -129,8 +137,8 @@ struct WeekCard: View {
                 Label("\(summary.remaining.drinksText) left", systemImage: "drop")
                 Label("\(summary.drinkFreeDays) drink-free \(summary.drinkFreeDays == 1 ? "day" : "days")", systemImage: "leaf")
                     .accessibilityIdentifier("drink-free-count-label")
-                Label("\(streak)-day streak", systemImage: "flame")
-                    .accessibilityIdentifier("streak-label")
+                Label("\(summary.checkedInDays) of \(summary.daysElapsed) days logged", systemImage: "checkmark.circle")
+                    .accessibilityIdentifier("days-logged-label")
             }
             .font(.subheadline)
             Spacer(minLength: 0)
@@ -141,5 +149,34 @@ struct WeekCard: View {
 
     private var ringColor: Color {
         summary.standardDrinks > summary.weeklyGoal ? .orange : .green
+    }
+}
+
+/// The reminder, offered once after the first check-in.
+struct ReminderOfferCard: View {
+    @Environment(JournalModel.self) private var model
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Want a nudge in the evening if the day isn't logged yet?", systemImage: "bell")
+                .font(.subheadline)
+            HStack {
+                Button("Remind me at \(model.reminderTimeToday.formatted(date: .omitted, time: .shortened))") {
+                    Task { await model.answerReminderOffer(accept: true) }
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("reminder-offer-accept-button")
+                Button("Not now") {
+                    Task { await model.answerReminderOffer(accept: false) }
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("reminder-offer-dismiss-button")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("reminder-offer-card")
     }
 }

@@ -28,6 +28,12 @@ let package = Package(
             name: "Tippy",
             dependencies: [
                 .product(name: "TippyModeration", package: "TippyModeration"),
+            ],
+            // The sprites the app shows, copied from Assets/Sprites by
+            // scripts/sync-sprites.py. SwiftPM bundles them as Tippy_Tippy.bundle,
+            // which xtool packs into the app; code reads them via Bundle.module.
+            resources: [
+                .copy("Resources/Sprites"),
             ]
         ),
     ],

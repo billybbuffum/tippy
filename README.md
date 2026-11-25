@@ -25,6 +25,8 @@ Sources/Tippy/Model/               application layer: JournalModel, ports
 Sources/Tippy/Adapters/            port implementations (file store, notifications)
 Sources/Tippy/Views/<Feature>/     SwiftUI, one folder per feature
 Sources/Tippy/Demo/                UI smoke test demo mode: seeds, fixed clock, stand-in adapters
+Sources/Tippy/Resources/Sprites/   the sprites the app ships, copied from Assets/Sprites by scripts/sync-sprites.py
+Assets/Sprites/                    source pixel art (see its README)
 scripts/resign.sh                  re-signs the CI-built IPA with a real development identity
 scripts/merge-entitlements.py      the entitlements each bundle is signed with
 scripts/install-page.sh            builds the GitHub Pages install page around that IPA
@@ -112,7 +114,8 @@ Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`S
 |---|---|
 | `default` | set up already (pet "Sprout", goal 14, Monday weeks), nothing logged |
 | `onboarding` | first launch |
-| `mid-week` | 3 beers Monday, 3 Tuesday, Wednesday drink-free, today not logged |
+| `mid-week` | 3 beers Monday, 3 Tuesday, Wednesday drink-free with a reflection, today not logged, reminder not offered yet |
+| `one-drink` | one beer logged today, nothing else |
 
 Every seed fixes the clock at Thursday 19 November 2026, 6 PM, keeps the journal in memory, and sends no
 notifications, so runs are repeatable.

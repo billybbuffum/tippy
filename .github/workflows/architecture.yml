@@ -22,3 +22,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 scripts/check-architecture.py
+      - name: Sprite copies match Assets/Sprites
+        run: python3 scripts/sync-sprites.py --check

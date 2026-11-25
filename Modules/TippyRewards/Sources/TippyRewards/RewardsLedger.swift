@@ -37,18 +37,31 @@ public struct RewardsLedger: Hashable, Sendable {
     /// Records an award unless its key exists. Returns true if it was new.
     @discardableResult
     public mutating func record(_ award: Award) -> Bool {
-        guard awards[award.key] == nil else { return false }
+        guard !hasAward(award.key) else { return false }
         awards[award.key] = award
         return true
     }
 
-    public func hasAward(_ key: AwardKey) -> Bool { awards[key] != nil }
+    public func hasAward(_ key: AwardKey) -> Bool { award(for: key) != nil }
 
-    public func award(for key: AwardKey) -> Award? { awards[key] }
+    public func award(for key: AwardKey) -> Award? {
+        if let exact = awards[key] { return exact }
+        guard let week = RewardWeek.week(for: key) else { return nil }
+        return awards.values.sorted { $0.key < $1.key }.first { award in
+            guard let recorded = RewardWeek.week(for: award.key) else { return false }
+            return RewardWeek.matches(recorded, week)
+        }
+    }
 
-    /// Coins from awards whose `earnedOn` falls inside `week` (its goal bonus included).
+    /// Daily awards belong to their logged date; a goal bonus belongs to the
+    /// same reward week even after switching the calendar's first weekday.
     public func coinsEarned(in week: Week) -> Int {
-        awards.values.filter { week.contains($0.earnedOn) }.reduce(0) { $0 + $1.coins }
+        awards.values.filter { award in
+            if let recorded = RewardWeek.week(for: award.key) {
+                return RewardWeek.matches(recorded, week)
+            }
+            return week.contains(award.earnedOn)
+        }.reduce(0) { $0 + $1.coins }
     }
 
     // MARK: Recaps
@@ -56,17 +69,21 @@ public struct RewardsLedger: Hashable, Sendable {
     /// Marks `week`'s recap seen. The first time keeps `at`; seeing it again only
     /// updates the idea.
     public mutating func markRecapSeen(_ week: Week, at instant: Date, nextWeekIdea: String?) {
-        if var recap = recaps[week.start] {
+        if var recap = recap(for: week) {
             recap.nextWeekIdea = WeeklyRecap.cleaned(nextWeekIdea)
-            recaps[week.start] = recap
+            recaps[recap.weekStart] = recap
         } else {
             recaps[week.start] = WeeklyRecap(weekStart: week.start, seenAt: instant, nextWeekIdea: nextWeekIdea)
         }
     }
 
-    public func hasSeenRecap(for week: Week) -> Bool { recaps[week.start] != nil }
+    public func hasSeenRecap(for week: Week) -> Bool { recap(for: week) != nil }
 
-    public func recap(for week: Week) -> WeeklyRecap? { recaps[week.start] }
+    public func recap(for week: Week) -> WeeklyRecap? {
+        recaps[week.start] ?? recaps.values.sorted { $0.weekStart < $1.weekStart }.first {
+            RewardWeek.matches(Week(start: $0.weekStart), week)
+        }
+    }
 }
 
 extension RewardsLedger: Codable {

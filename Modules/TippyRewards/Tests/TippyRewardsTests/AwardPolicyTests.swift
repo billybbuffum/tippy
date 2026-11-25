@@ -114,4 +114,43 @@ final class AwardPolicyTests: XCTestCase {
         XCTAssertTrue(second.isEmpty)
         XCTAssertEqual(ledger.balance, balance)
     }
+
+    func testChangingWeekStartDoesNotPayTheSameWeekTwice() throws {
+        for firstWeekday in [1, 2] {
+            var settings = ModerationSettings()
+            settings.firstWeekday = firstWeekday
+            let days = Set((9...13).map { LocalDate(year: 2026, month: 11, day: $0)! })
+            var journal = Journal(settings: settings, drinkFreeDays: days)
+            var ledger = RewardsLedger()
+            for award in AwardPolicy.eligibleAwards(journal: journal, today: today) { ledger.record(award) }
+            let originalBalance = ledger.balance
+            let originalWeek = journal.week(containing: today).previous
+            ledger.markRecapSeen(originalWeek, at: noon, nextWeekIdea: "Tea")
+
+            // Repeatedly switching in both directions cannot farm bonuses or recaps,
+            // even across a save/reload. Daily rewards still use their exact day.
+            for weekday in [1, 2, 1, 2] {
+                journal.settings.firstWeekday = weekday
+                ledger = try RewardsCodec.decode(RewardsCodec.encode(ledger))
+                for award in AwardPolicy.eligibleAwards(journal: journal, today: today) { ledger.record(award) }
+                let week = journal.week(containing: today).previous
+                XCTAssertEqual(ledger.balance, originalBalance)
+                XCTAssertTrue(ledger.hasAward(.weekGoal(week)))
+                XCTAssertNotNil(ledger.award(for: .weekGoal(week)))
+                XCTAssertEqual(ledger.coinsEarned(in: week), ledger.coinsEarned(in: originalWeek))
+                XCTAssertNil(RecapPolicy.weekToRecap(journal: journal, ledger: ledger, today: today))
+                XCTAssertEqual(ledger.recap(for: week)?.nextWeekIdea, "Tea")
+                ledger.markRecapSeen(week, at: noon, nextWeekIdea: "A walk")
+                XCTAssertEqual(ledger.recaps.count, 1)
+            }
+
+            // The following completed week remains independently eligible.
+            for day in (16...20).map({ LocalDate(year: 2026, month: 11, day: $0)! }) {
+                try journal.markDrinkFree(day, today: today.adding(days: 7))
+            }
+            let next = AwardPolicy.eligibleAwards(journal: journal, today: today.adding(days: 7))
+                .filter { ledger.record($0) }
+            XCTAssertEqual(next.filter { $0.key.rawValue.hasPrefix("weekGoal:") }.count, 1)
+        }
+    }
 }

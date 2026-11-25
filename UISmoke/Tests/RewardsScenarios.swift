@@ -34,6 +34,12 @@ final class RewardsScenarios: SmokeScenario {
         XCTAssertTrue(element("weekly-recap-view").waitForNonExistence(timeout: 5), "the recap closes")
         XCTAssertEqual(element("recap-idea-label").label, "Sparkling water before dinner")
         XCTAssertEqual(element("coin-balance-label").label, "48 coins")
+        element("settings-button").tap()
+        screen("settings", element("settings-done-button"))
+        element("settings-done-button").tap()
+        screen("idea-kept", element("recap-idea-label"))
+        XCTAssertEqual(element("recap-idea-label").label, "Sparkling water before dinner")
+        XCTAssertFalse(element("weekly-recap-view").exists, "Done preserves the idea and consumes only its recap")
     }
 
     /// Back-fill Monday (three days ago) as drink-free from History: 8 more coins.

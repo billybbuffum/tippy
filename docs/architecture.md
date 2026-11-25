@@ -174,6 +174,9 @@ Rules between contexts:
 - A day is a `LocalDate`; an instant is a `Date`. Entries are filed under a `LocalDate`, which is decided once,
   with the user's calendar, when the entry is logged.
 - `Week` starts on the user's first weekday. Week math happens only in the domain.
+- Rewards identify a completed week by the Monday-start week containing its middle day. Switching between
+  Sunday and Monday in Settings cannot pay the same week's bonus or show its recap twice. Saved keys and
+  recap dates retain their original dates; daily awards continue to use exact logged dates.
 
 **Persistence and migration**
 - Each context's aggregate is one JSON file in Application Support, written atomically, with a `version`.

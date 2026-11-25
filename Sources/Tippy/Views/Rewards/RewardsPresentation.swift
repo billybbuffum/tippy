@@ -14,6 +14,8 @@ struct RewardsPresentation: ViewModifier {
     @Environment(RewardsModel.self) private var rewards
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var recap: WeekItem?
+    /// Retained after SwiftUI clears the sheet binding, until onDismiss runs.
+    @State private var presentedRecapWeek: Week?
     @State private var toast: EarnedToast?
     @State private var isInFront = false
 
@@ -52,8 +54,9 @@ struct RewardsPresentation: ViewModifier {
 
     /// Presents what is due, recap first, when Home is in front and nothing covers it.
     private func update(inFront: Bool? = nil) {
-        guard inFront ?? isInFront, !otherSheetShowing, recap == nil else { return }
+        guard inFront ?? isInFront, !otherSheetShowing, recap == nil, presentedRecapWeek == nil else { return }
         if let week = rewards.pendingRecap {
+            presentedRecapWeek = week
             recap = WeekItem(week: week)
             return
         }
@@ -67,8 +70,12 @@ struct RewardsPresentation: ViewModifier {
     }
 
     private func recapDismissed() {
-        // Swiped away without Done: it still counts as seen, with no idea.
-        if let week = rewards.pendingRecap { rewards.markRecapSeen(week, nextWeekIdea: nil) }
+        // Only consume the week actually shown. A refresh while the sheet was
+        // open may have made a different week pending. Done already saved its idea.
+        if let week = presentedRecapWeek, !rewards.hasSeenRecap(for: week) {
+            rewards.markRecapSeen(week, nextWeekIdea: nil)
+        }
+        presentedRecapWeek = nil
         update()
     }
 }

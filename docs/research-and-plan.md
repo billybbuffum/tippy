@@ -1,221 +1,100 @@
-# Tippy: research notes and build plan
+# Tippy project plan
 
-Tippy is a personal, open-source, non-commercial alcohol-moderation app with a virtual pet,
-inspired by **Tipple: Alcohol Moderation Pet** (iOS, by Myrtle).
+**Goal:** Help someone who wants to keep drinking by choice understand which drinking occasions they enjoy, which feel automatic, and what they want to try next. Tippy is a personal iPhone app with an original pixel-art pond and pet companion.
 
-> Research caveat: the App Store, the developer's site (moderation.pet) and screensdesign.com
-> could not be opened directly from the research environment. Everything below comes from
-> search-engine summaries of those pages, plus comparable apps. Items marked *(unconfirmed)*
-> should be checked against the real app.
+**First release:** A complete first week, from choosing an intention or observing a baseline to reviewing the week and meeting the pond's fox visitor. The daily check-in should fit in about 30 seconds when the user skips the optional prompt. A typical weekly review should fit in about two minutes. These are design targets to validate on a real device.
 
----
+## What we learned from Tipple
 
-## 1. What Tipple is
+| Evidence | Implication for Tippy |
+| --- | --- |
+| Tipple's developer describes a user-set weekly budget, daily logging, and coins for hitting a target that can be spent on the fox's campsite. | Keep a simple weekly goal and a world that visibly changes. |
+| A captured screen sequence shows a baseline questionnaire, drink logging, optional chat and daily intentions, weekly progress, a prize wheel, and camp upgrades. | Keep the daily actions short and offer reflection after saving. |
+| Some App Store reviewers liked the playful tone. Others reported repetitive questions and finishing the camp within roughly a week. | Give each prompt a purpose and let the app remain useful after the last unlock. |
 
-| | |
-|---|---|
-| Name | Tipple: Alcohol Moderation Pet (App Store id 6762130998) |
-| Developer | Myrtle (also publishes "Tipple - Make the Change", an "accountability pet" app) |
-| Platform | iPhone only; Health & Fitness; rated 18+ |
-| Released | ~May 15, 2026 |
-| Ratings | 4.6★; counts vary by source and date (≈590–800) |
-| Business model | Free download, "Pro" subscription (yearly plan, 7-day free trial); one directory says it shows ads |
-| Tagline | "Drink less, live more, and find your Tipple balance" |
-| Positioning | Track, moderate and reduce drinking. Aimed at moderation, "damp" living or full sobriety; sober-curious users; Dry January / Sober October |
-| Tone | Non-judgmental and playful. Its site says it makes "moderation feel like a game, not a chore" |
+The public evidence supports cosmetic progression and a campsite repair setup. It does not establish an ongoing plot, branching quests, or how much content the latest build contains. This review used the [developer site](https://www.moderation.pet/), [App Store listing](https://apps.apple.com/us/app/tipple-alcohol-moderation-pet/id6762130998), [screen walkthrough](https://screensdesign.com/apps/tipple-alcohol-moderation-pet/), and [App Store reviews](https://apps.apple.com/us/app/tipple-alcohol-moderation-pet/id6762130998?see-all=reviews). The current app was not independently played through.
 
-### Core loop (as far as can be confirmed)
+## Repository baseline
 
-1. **Onboarding chat with a fox mascot** about your current drinking habits.
-2. **Set a goal**: a weekly target and a daily drinking limit.
-3. **Log drinks daily.** Logging "keeps the fox on track". Missing a day makes the fox
-   "let you know, gently" (a reminder, not a punishment).
-4. **Weekly progress tracker** with reward animations.
-5. **Coins** are earned for hitting the weekly target, plus **free spins** that award objects.
-6. **Spend coins upgrading the fox's camp.**
-7. **Savings calculator** that shows money saved by drinking less.
-8. **Chat feature** for writing out feelings *(reported by reviewers)*.
+- [Package.swift](../Package.swift) targets iOS 17+ with SwiftUI and depends on the Foundation-only [TippyModeration package](../Modules/TippyModeration).
+- [ContentView.swift](../Sources/Tippy/ContentView.swift) shows a placeholder pet, weekly summary, a button that logs a beer, and a drink-free action. [TippyApp.swift](../Sources/Tippy/TippyApp.swift) supplies the existing week model. Audit the model and any persisted data before replacing its storage or wiring.
+- The [README](../README.md) documents xtool builds, the macOS CI workflow, simulator GIF smoke tests, signing, and over-the-air installation for registered iPhones. Use that pipeline for the pilot. Confirm device registration, signing and a real install early.
+- Inventory the merged art and open asset work before integrating it. The existing placeholder should provide a fallback until production assets are ready.
 
-### What reviewers liked and disliked (use this as a design brief)
+## Product flow
 
-- 👍 Less judgmental and more upbeat than other apps; not loaded with "tasks, readings or assignments".
-- 👍 The chat helps with processing feelings.
-- 👎 **The reward loop runs dry.** The camp is fully upgraded after about a week, after which
-  coins pile up with nothing to spend them on and the camp stops changing.
-- 👎 It asks the same questions every day and gives no real insight.
-- 👎 The features feel thin for the subscription price, and "there are a ton of free drink trackers".
+| Moment | User experience | Acceptance criteria |
+| --- | --- | --- |
+| First launch | Meet and optionally name the pond pet. Choose what to explore, then set an optional weekly drink goal or start in observation mode. Offer a reminder after the first save. | The user can complete a first check-in without a drink goal, reminder permission, or account. |
+| Pond home | See the pet, today's check-in action, the week's recorded total, and the optional goal. Open recent days or previous reviews. | The UI distinguishes a recorded zero from an unlogged day. A goal of zero is distinct from observation mode. |
+| Log a day | Pick today, yesterday, or an earlier date. Record zero or add one or more drinks. Offer common presets and a custom amount and ABV. | Save and edit both kinds of records, reopen them after relaunch, and show the updated total immediately. The form preserves the user's input if saving fails. |
+| Reflect optionally | After logging, offer one short prompt and a skip action. For example, “Which drink did you most enjoy?” or “What did you want in that moment?” | Saving a drink log is independent of answering the prompt. Drink-free entries can use prompts such as “What did you notice about the evening?” |
+| Review the week | Show recorded totals, explicitly drink-free days, and days with no entry. Resurface the user's own notes. Offer one experiment and the option to keep, change, or remove the next goal. | Partial weeks are marked as partial. The user can save the review and close the app without losing their experiment. |
+| Return after a gap | Welcome the user back, offer today and yesterday, and keep earlier entries available. | Unlogged days do not reset pond progress or trigger guilt-based copy. Reminders are opt-in and use neutral notification text. |
 
-### Comparable apps to borrow ideas from
+Example experiment: “At Friday dinner, I’ll order the drink I actually want and decide about a second one after I finish eating.” Keep experiments user-authored or user-selected. The app should record what the user noticed without claiming that sparse data proves a pattern.
 
-- **Reboo** (by Reframe): an axolotl hatched from an egg. Coins from each check-in build and
-  upgrade its pond. Offers a **6-week plan that steps weekly drinks down**, support for
-  alcohol-free breaks, and a chat for planning nights out or handling cravings. It includes a
-  clear **"not medical advice / heavy daily drinkers should consult a doctor before stopping"** warning.
-- **SoberPal**: a bear companion for cravings, with drink tracking and daily limits.
-- **DryDog**: a Tamagotchi-style streak pet that grows (abstinence-focused).
-- **Finch**: the best-known self-care pet; a good reference for a gentle, never-punishing pet.
-- **DrinkControl / DampDays**: standard-drink units, Apple Health sync, lock-screen widgets.
+## Pond progression and story
 
----
+The pond gradually becomes a gathering place. Tippy finds a dim lantern on the first check-in. After three unique checked-in dates, the lantern lights and the reeds start to move. After the first completed weekly review, an original fox visitor appears at dusk for a brief conversation. The review milestone works in observation mode and with incomplete weeks. Animations can be replayed from the pond once unlocked.
 
-## 2. What you need to decide
+Progress is cumulative across weeks. A recorded day can count once, regardless of drink count. Edits do not replay rewards or revoke earned scenes. The companion stays friendly in every state, and weekly totals use neutral copy separate from the pet's mood. Use idle animations, swaying reeds, ripples and occasional twinkles to bring the scene to life. Support Reduce Motion with still poses and brief fades.
 
-### 2a. Platform: decided
+Ship the starter pet and first fox visit in the pilot. Additional original pets, seasonal pond changes, outfits and longer story arcs are later content. Keep paid features, randomized rewards, an economy, and mandatory streaks outside the first release. The weekly reflection remains available after the first story arc ends.
 
-**Native SwiftUI iPhone app, built and distributed exactly like ChoreLock.** GitHub Actions builds the
-SwiftPM package with xtool on a macOS runner, signs it with the existing Apple Developer account, and publishes
-an over-the-air install page (`https://billybbuffum.github.io/tippy/`) that a registered iPhone installs from
-in Safari. No Mac or Xcode is needed. See the README for the one-time setup.
+## Implementation plan
 
-What this gives over the earlier web-app idea:
-- **Real local notifications** (`UserNotifications`) for the daily check-in reminder, with **no server**.
-- Home-screen and lock-screen **widgets** (WidgetKit extension + App Group) later.
-- Optional **Apple Health** logging of alcoholic beverages (HealthKit) later.
-- SwiftData persistence; optional iCloud/CloudKit backup later, as ChoreLock's household does.
+### 1. Store reliable check-ins
 
-### 2b. Name and art (IP hygiene)
+- Introduce a versioned local store, with SwiftData as the proposed persistence layer. Keep date, drink conversion and weekly aggregation logic in `TippyModeration`. Keep view state and persistence adapters under `Sources/Tippy`.
+- Model a day with a stable local calendar date, an explicit record state (zero drinks or one or more drinks), optional reflection, and timestamps. Absence of a day record represents missing data. Each drink has a stable ID and stores the input amount, volume unit, ABV and any explicit standard-drink override. Reuse the current domain conversion and aggregate before display rounding.
+- Define the pilot's weeks as Monday–Sunday in the user's calendar time zone. Keep recorded date keys stable while traveling. Snapshot weekly goals so changes apply going forward. Totals may update after backfill; past targets and earned milestones remain stable. Derive weekly totals from records instead of persisting a second count.
+- Save edits atomically. Adding a drink to a zero day changes its record state. Removing the last drink requires an explicit choice to mark the day drink-free or clear the entry. Ensure repeat taps, retries and relaunches cannot create duplicate check-ins or milestones. Preserve existing records during migration if the baseline has durable user data.
 
-For a private app for your wife, anything goes. Because this repo is **public and open source**, though:
-- Don't reuse Tipple's name, fox character art, camp art, screenshots or copy text. "Tippy" is close to
-  "Tipple", so consider a distinct name and an original pet (a different animal or a made-up creature) if
-  you ever share it more widely.
-- Use original art or CC0 assets (e.g. Kenney.nl), or draw simple SVGs. Copying *mechanics*
-  (log drinks → pet reacts → earn coins → decorate) is fine.
+**Exit check:** Zero, multiple drinks, corrections and backfill survive a relaunch. The UI handles a missing record, partial week, goal of zero and observation mode distinctly.
 
-### 2c. Safety and tone
+### 2. Close the daily loop
 
-- Show a short "not medical advice" note. Also warn that heavy daily drinkers shouldn't
-  stop suddenly without a doctor, because alcohol withdrawal can be dangerous. Link to a helpline
-  (US: SAMHSA 1-800-662-4357).
-- The pet should **never die, get sick or guilt-trip**. Its moods should range from "cozy/happy" to "a bit sleepy/concerned", with a gentle nudge.
-- Logging an over-limit day should still earn a check-in coin. Honesty is the habit being rewarded.
+- Replace the placeholder one-tap beer action with presets and custom entry. Add a history view for date selection and editing.
+- Add brief first-launch setup and a settings path for editing the current intention and next week's goal. Present the optional reflection after save and draw prompts from a small, locally bundled set.
+- Add local reminders only after opt-in. Reconcile scheduling when the app becomes active and when preferences, calendar conditions or the current day's entry change. Check how permission denial and already-delivered reminders behave.
 
----
+**Exit check:** A fresh user can record a day using VoiceOver, skip reflection, edit the entry from history, and understand their weekly total. The pilot timing target is met for a routine check-in.
 
-## 3. MVP feature list
+### 3. Deliver the weekly review
 
-**Onboarding (about 5 screens, styled as a chat with the pet)**
-1. Hatch or name the pet.
-2. "How many drinks in a typical week?" (baseline)
-3. Weekly goal in standard drinks (suggest baseline −20–30%), plus optional drink-free-days target.
-4. Typical cost per drink (for the savings calculator).
-5. Reminder time for the daily local notification.
+- Use a stable week identifier for the review, with the user's note, chosen experiment and any next-week goal. Save one review per week and allow editing it.
+- Show the most recently completed week on return. Make previous reviews accessible through history. Avoid queues of prompts when a user comes back after a long break.
+- Show each day's state in a short summary. Label partial data and resurface notes directly. Preview the week in simulator seeds so the review is testable without waiting seven days.
 
-**Daily use**
-- **Quick log**: preset buttons (beer, glass of wine, cocktail, shot, seltzer) with editable size and ABV,
-  and a big **"No drinks today"** button. Drinks can be edited or deleted, and past days can be back-filled.
-- **Home screen**: the pet in its home, this week's progress ring (drinks used / budget), drink-free days
-  so far, coins, and the check-in streak.
-- **Gentle reminder** if today hasn't been logged.
+**Exit check:** A partially logged week can be reviewed, an experiment appears for the intended follow-up week, and the next goal cannot change historical comparisons.
 
-**Progress**
-- Weekly bar chart of standard drinks per day; week-over-week trend.
-- Money saved vs baseline, approximate calories, drink-free day count.
-- Weekly recap card when the week rolls over: goal met? coins awarded; pet celebration animation.
+### 4. Integrate pond art and milestones
 
-**Rewards (fix Tipple's biggest complaint)**
-- Coins: +1 per daily check-in, +bonus for a drink-free day, +big bonus for meeting the weekly goal.
-- Shop of decorations, outfits and pet food, with **a long, tiered catalog** and seasonal or rotating items so
-  there's always something to save for.
-- Pet growth stages unlocked by *weeks on target* (egg → baby → teen → adult), plus milestone badges.
-- Optional: a short reflection prompt that varies daily ("What helped today?") instead of the same questions.
+- Confirm frame dimensions, timing, anchors and sprite IDs with the asset contributors. Use original art, original dialogue and Tippy's own layout.
+- Drive the pond from explicit milestone IDs and record the award once, together with the relevant check-in or review. Keep the milestone condition independent of drinks logged or goals reached.
+- Add the lantern, reeds and fox visit, then verify asset bundling and the app icon through the existing xtool packaging flow.
 
-**Plans (later)**
-- Optional step-down plan, like Reboo's 6 weeks (e.g. reduce the weekly budget by 1–2 drinks per week).
-- Optional "break" mode (e.g. a 30-day dry challenge).
+**Exit check:** The same milestones appear after equivalent check-ins regardless of drink totals. Earlier scenes and art remain available after relaunch, and the pond is usable with Reduce Motion enabled.
 
-**Data and settings**
-- Everything stored on the device (SwiftData). No account, no server, no analytics.
-- **Export/import JSON backup** (deleting the app would otherwise wipe history).
-- Units: US standard drinks by default; UK units as an option.
+### 5. Pilot and release
 
----
+- Install on a registered iPhone via the documented signing and Pages workflow. Confirm that upgrading over the prior signed build preserves records.
+- Before a multiweek pilot, add versioned JSON export and a validated restore flow. Preview what will be restored, handle duplicate IDs explicitly, and apply imports atomically. Explain that exports contain private notes.
+- Run a voluntary two-week pilot. Ask whether the daily log was easy, whether the review surfaced something the user wanted to remember, and whether the pond felt encouraging. Use direct feedback and optional notes, with no telemetry or automatic sharing.
+- Prioritize changes based on feedback. Consider extra visitors, widgets, Apple Health, syncing, richer trends or revised prompts only after the core loop is useful.
 
-## 4. Key logic
+**Exit check:** The pilot user can install, update, restore a backup and complete a first week on the phone. Capture feedback without committing any personal records to GitHub.
 
-### Standard drinks
+## Verification and release gates
 
-```
-grams_alcohol  = volume_ml × (ABV% / 100) × 0.789
-us_std_drinks  = grams_alcohol / 14      // US standard drink = 14 g
-uk_units       = grams_alcohol / 8       // UK unit = 8 g
-```
-Presets (US): 12 oz / 355 ml beer @ 5% ≈ 1.0 · 5 oz / 148 ml wine @ 12% ≈ 1.0 ·
-1.5 oz / 44 ml spirit @ 40% ≈ 1.0. Note that many craft beers and pours are 1.5–2+ drinks.
+| Area | Required checks |
+| --- | --- |
+| Domain | Standard-drink conversion and rounding; local day/week boundaries across DST, year rollover and travel; observation mode and zero goal; missing vs. zero; backfill and edits; once-only milestone awards. |
+| UI | Existing smoke coverage plus scenarios for first launch, zero and drink entry, editing an earlier day, a partial weekly review, and the first fox visit. Follow the README's smoke-scenario rule for source changes. |
+| Device | Signed install and update, reminder permission and delivery, persistence after termination, backup and restore, Dynamic Type, VoiceOver, Reduce Motion, and acceptable sprite animation performance. |
+| Privacy | Keep logs and reflections on-device with no account or analytics in the pilot. Use synthetic values in fixtures, CI GIFs, issues and screenshots. Remain within the existing app's non-clinical scope and do not provide automated drinking targets or taper schedules. |
 
-### Pet mood (example)
+**Suggested PR order:** Local storage and domain rules → daily logging and onboarding → weekly review → art and milestone wiring → backup and release polish. Each PR should include its own verification, so art and signed-device setup can proceed while the data model is developed.
 
-```
-weekPace   = drinksThisWeek / (weeklyGoal × daysElapsed / 7)
-loggedToday, streak = consecutive days with a check-in
-
-mood =
-  !loggedToday && afterReminderTime → "waiting"    (looks at you, speech bubble: "how was today?")
-  weekPace <= 0.8                   → "thriving"   (bouncy, sparkles)
-  weekPace <= 1.0                   → "happy"
-  weekPace <= 1.3                   → "okay"       (calm, encouraging line)
-  else                              → "concerned"  (sleepy/cozy, never sad-crying; offers tips)
-```
-
-### Data model (sketch)
-
-```ts
-Settings   { petName, petSpecies, weeklyGoal, drinkFreeDaysGoal, costPerDrink,
-             baselinePerWeek, unitSystem, weekStartsOn, reminderTime }
-DrinkEntry { id, date, timestamp, presetId?, name, volumeMl, abv, stdDrinks, cost? }
-DayCheckIn { date, drinkFree: boolean, note?, mood? }
-Wallet     { coins }  +  CoinEvent { id, date, amount, reason }
-Inventory  { itemId, placed: boolean, position? }
-WeekSummary{ weekStart, totalStd, goal, metGoal, coinsAwarded }   // derived/cached
-```
-
----
-
-## 5. Tech stack
-
-- **SwiftUI**, iOS 17+, SwiftPM package built with **xtool** (same as ChoreLock)
-- **Modules/TippyModeration**: Foundation-only domain package (standard drinks, pace, mood, later coins and
-  weeks), unit-tested with `swift test` in CI
-- **SwiftData** for the on-device store; JSON export/import for backups
-- **UserNotifications** for the daily reminder (local, no server)
-- **Swift Charts** for the weekly chart
-- **SwiftUI animations** (or Lottie/Rive later) for the pet
-- **UI smoke test**: XCUITest scenarios on the simulator, recorded to GIFs on PRs (automatically on every PR; free on this public repo)
-- **GitHub Actions + GitHub Pages** for signed builds and over-the-air installs
-
-### Server (only if ever needed)
-
-None is needed: reminders are local notifications and backup can be a file export or CloudKit. If a server is
-ever added, it follows a strict **hexagonal + DDD** structure; see [`server-architecture.md`](./server-architecture.md).
-
-## 6. Build roadmap
-
-1. **Scaffold** ✅: SwiftPM package + xtool, the ChoreLock build/sign/install-page pipeline, UI smoke test,
-   `TippyModeration` domain (standard drinks, pace, mood) with tests, a placeholder home screen. Next: add the
-   secrets and the App ID, merge to `main`, and install on her phone.
-2. **Persistence**: SwiftData drink entries and check-ins; week boundaries (domain + tests).
-3. **Logging**: quick-log presets with size/ABV, "no drinks today", edit/delete, back-fill.
-4. **Home + pet**: real pet art with 4–5 mood poses, weekly progress ring, streak.
-5. **Coins + weekly recap**: coin events, week rollover, celebration.
-6. **Shop + home decoration**: catalog of items, placing them in the pet's home.
-7. **Stats**: Swift Charts weekly chart, savings, drink-free days.
-8. **Onboarding chat flow.**
-9. **Backup**: export/import JSON (optionally CloudKit later).
-10. **Reminders**: daily local notification, skipped once today is logged.
-11. **Polish**: growth stages, badges, varied reflection prompts, step-down plan, dark mode.
-
----
-
-## Sources
-
-- App Store listing: https://apps.apple.com/us/app/tipple-alcohol-moderation-pet/id6762130998
-- App Store reviews: https://apps.apple.com/us/app/tipple-alcohol-moderation-pet/id6762130998?see-all=reviews
-- Developer site: https://www.moderation.pet/
-- Screens Design: https://screensdesign.com/discover/apps/tipple-alcohol-moderation-pet/
-- AppShunter: https://appshunter.io/ios/app/tipple-alcohol-moderation-pet/id6762130998
-- AppBrain: https://www.appbrain.com/appstore/tipple-alcohol-moderation-pet/ios-6762130998
-- Tipple - Make the Change: https://apps.apple.com/us/app/tipple-make-the-change/id6795887020
-- Reboo (Google Play): https://play.google.com/store/apps/details?id=com.reframe.reboo
-- SoberPal: https://apps.apple.com/us/app/id6759593525
-- DryDog: https://apps.apple.com/us/app/id6769381741
-- DrinkControl: https://apps.apple.com/us/app/id456207840
+**Decisions to revisit after the pilot:** Whether Monday is the best review boundary, whether users want the numeric goal visible on the pond, and whether additional visitors or better reflection prompts would make them more likely to return.

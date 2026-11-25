@@ -183,6 +183,12 @@ WeekSummary{ weekStart, totalStd, goal, metGoal, coinsAwarded }   // derived/cac
 - **Vitest** for the unit/mood/coin logic
 - **GitHub Pages** via a GitHub Action for free hosting at `billybbuffum.github.io/tippy`
 
+### Server (only if needed)
+
+The app works with no server. A server is added only for **Reminders** (Web Push, because iOS web apps can't
+schedule their own notifications) and, later, optional **encrypted Backup**. All server code follows a
+strict **hexagonal + DDD** structure; see [`server-architecture.md`](./server-architecture.md).
+
 ---
 
 ## 6. Build roadmap
@@ -196,7 +202,8 @@ WeekSummary{ weekStart, totalStd, goal, metGoal, coinsAwarded }   // derived/cac
 7. **Stats**: weekly chart, savings, drink-free days.
 8. **Onboarding chat flow.**
 9. **Backup**: export/import JSON.
-10. **Reminders**: web push (or a Capacitor/Expo wrapper) if wanted.
+10. **Reminders**: the Reminders bounded context on the server (hexagonal/DDD, see
+    `server-architecture.md`) plus client push subscription. Alternatively, a Capacitor/Expo wrapper with local notifications.
 11. **Polish**: growth stages, badges, varied reflection prompts, step-down plan, dark mode.
 
 ---

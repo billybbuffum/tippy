@@ -65,9 +65,14 @@ private struct RecapNumbers: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(String(format: "%.1f of %.0f drinks", summary.standardDrinks, summary.weeklyGoal), systemImage: "drop")
+            // One element each, read as its text (otherwise the icon can take the identifier).
+            Label(totalText, systemImage: "drop")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(totalText)
                 .accessibilityIdentifier("recap-total-label")
             Label(daysText, systemImage: "leaf")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(daysText)
                 .accessibilityIdentifier("recap-days-label")
             HStack(spacing: 8) {
                 CoinIcon()
@@ -87,6 +92,10 @@ private struct RecapNumbers: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var totalText: String {
+        String(format: "%.1f of %.0f drinks", summary.standardDrinks, summary.weeklyGoal)
     }
 
     private var daysText: String {

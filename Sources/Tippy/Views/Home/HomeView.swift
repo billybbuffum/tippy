@@ -23,11 +23,13 @@ struct HomeView: View {
                             .multilineTextAlignment(.center)
                             .accessibilityIdentifier("pet-mood-label")
                     }
-                    WeekCard(summary: model.summary)
-                    todayCard
                     if model.shouldOfferReminder {
+                        // Near the top: it's shown once, so it must be in view
+                        // without scrolling, clear of the bottom action bar.
                         ReminderOfferCard()
                     }
+                    WeekCard(summary: model.summary)
+                    todayCard
                 }
                 .padding()
             }

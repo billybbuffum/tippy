@@ -68,8 +68,10 @@ final class HomeScenarios: SmokeScenario {
     func testReminderOffer() {
         launch(seed: .midWeek)
         screen("offer", element("reminder-offer-card"))
+        XCTAssertFalse(element("history-drink-free-row").exists)
         element("reminder-offer-accept-button").tap()
         XCTAssertTrue(element("reminder-offer-card").waitForNonExistence(timeout: 5), "the offer goes away once answered")
         screen("accepted", app.navigationBars["Tippy"])
+        XCTAssertTrue(element("today-status-label").label.contains("isn't logged"), "the tap reached the offer, not the bar below it")
     }
 }

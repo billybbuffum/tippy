@@ -16,6 +16,11 @@ struct TippyApp: App {
     @MainActor
     static func makeModel() -> JournalModel {
         if UISmokeMode.isActive { return UISmokeMode.makeModel() }
-        return JournalModel(store: FileJournalStore.standard(), reminders: NotificationReminderScheduler())
+        return JournalModel(
+            store: FileJournalStore.standard(),
+            reminders: NotificationReminderScheduler(),
+            calendar: .autoupdatingCurrent,
+            clock: { Date() }
+        )
     }
 }

@@ -34,15 +34,3 @@ final class FileJournalStore: JournalStore {
         try JournalCodec.encode(journal).write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
 }
-
-/// For demo mode: nothing touches the disk.
-final class InMemoryJournalStore: JournalStore {
-    private var journal: Journal?
-
-    init(_ journal: Journal?) {
-        self.journal = journal
-    }
-
-    func load() throws -> Journal? { journal }
-    func save(_ journal: Journal) throws { self.journal = journal }
-}

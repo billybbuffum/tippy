@@ -19,8 +19,12 @@ Package.swift                      SwiftPM manifest: one library product per bun
 xtool.yml                          app (+ future extension) bundle wiring
 Config/Info.plist                  keys merged on top of xtool's defaults
 Assets/DefaultIcon.png             the home-screen icon (original placeholder art)
-Modules/TippyModeration/           the Moderation context: Foundation-only domain + tests (journal, weeks, drinks, mood, reminders plan)
-Sources/Tippy/                     the app: Model/ (JournalModel), Adapters/ (file store, notifications), Views/
+Modules/TippyModeration/           Moderation context (domain): Foundation-only, Swift 6 mode, unit-tested
+Sources/Tippy/App/                 composition root (TippyApp) and RootView
+Sources/Tippy/Model/               application layer: JournalModel, ports
+Sources/Tippy/Adapters/            port implementations (file store, notifications)
+Sources/Tippy/Views/<Feature>/     SwiftUI, one folder per feature
+Sources/Tippy/Demo/                UI smoke test demo mode: seeds, fixed clock, stand-in adapters
 scripts/resign.sh                  re-signs the CI-built IPA with a real development identity
 scripts/merge-entitlements.py      the entitlements each bundle is signed with
 scripts/install-page.sh            builds the GitHub Pages install page around that IPA
@@ -30,7 +34,8 @@ scripts/ui-smoke.sh                builds for the simulator, runs the scenarios,
 scripts/smoke-scenarios.py         lists the scenarios; which ones a PR changed; the required-scenario check
 scripts/ui-smoke-comment.py        writes the PR comment from results.json
 scripts/ui-smoke-publish.sh        keeps the GIFs on the pr-media branch, one directory per PR
-docs/                              research, product plan, server architecture rules
+scripts/check-architecture.py      enforces the layering rules of docs/architecture.md (CI: architecture.yml)
+docs/                              architecture (read first), research and plan, server rules
 ```
 
 ## Building and installing
@@ -100,7 +105,7 @@ changes `Sources/` or `Modules/` without adding or changing a scenario or carryi
 body. GIFs live on the orphan `pr-media` branch and are removed when the PR closes. A PR from a fork runs the
 scenarios and uploads the artifacts but gets no comment, because its token is read-only.
 
-Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`Sources/Tippy/UISmokeMode.swift`).
+Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`Sources/Tippy/Demo/UISmokeMode.swift`).
 `-ui-smoke-seed <name>` picks the starting state:
 
 | Seed | Starts with |

@@ -16,14 +16,14 @@ final class JournalModel {
 
     private let store: any JournalStore
     private let reminders: any ReminderScheduling
-    private let clock: () -> Date
+    private let clock: Now
     let calendar: Calendar
 
     init(
         store: any JournalStore,
         reminders: any ReminderScheduling,
-        calendar: Calendar = .current,
-        clock: @escaping () -> Date = { Date() }
+        calendar: Calendar,
+        clock: @escaping Now
     ) {
         self.store = store
         self.reminders = reminders

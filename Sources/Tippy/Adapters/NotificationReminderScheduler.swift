@@ -2,14 +2,6 @@ import Foundation
 import UserNotifications
 import TippyModeration
 
-/// Port for the evening check-in reminder.
-protocol ReminderScheduling {
-    func requestAuthorization() async -> Bool
-    /// Replaces every pending reminder with one per day in `days`.
-    func schedule(days: [LocalDate], hour: Int, minute: Int, petName: String, calendar: Calendar)
-    func cancelAll()
-}
-
 /// Local notifications: one non-repeating notification per upcoming day
 /// that is not logged yet, so a logged day gets no reminder. Rescheduled
 /// on every change and every time the app comes to the front.
@@ -44,11 +36,4 @@ final class NotificationReminderScheduler: ReminderScheduling {
     func cancelAll() {
         center.removeAllPendingNotificationRequests()
     }
-}
-
-/// For demo mode: no permission prompts, no notifications.
-final class SilentReminderScheduler: ReminderScheduling {
-    func requestAuthorization() async -> Bool { true }
-    func schedule(days: [LocalDate], hour: Int, minute: Int, petName: String, calendar: Calendar) {}
-    func cancelAll() {}
 }

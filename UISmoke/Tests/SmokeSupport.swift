@@ -28,6 +28,12 @@ class SmokeScenario: XCTestCase {
         case midWeek = "mid-week"
         /// One beer logged today, nothing else; the reminder already offered.
         case oneDrink = "one-drink"
+        /// Onboarded, nothing logged, the starter egg in the nest (every
+        /// other seed has hatched the pondling already).
+        case eggReady = "egg-ready"
+        /// Nov 11-18 logged, one reflection: 9 steps on the Wander, the
+        /// pondling out, the moth egg nested one check-in from hatching.
+        case wanderMid = "wander-mid"
     }
 
     var app: XCUIApplication!

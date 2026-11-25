@@ -1,5 +1,6 @@
 import SwiftUI
 import TippyModeration
+import TippyWander
 
 extension Double {
     /// Standard drinks with one decimal: "1.0".
@@ -96,5 +97,86 @@ struct DrinkIcon: View {
         } else {
             Image(systemName: kind.symbol).font(.title2)
         }
+    }
+}
+
+extension WanderState {
+    /// The next-landmark chip: "4 steps to the Reed Bed" when the next
+    /// landmark is in a new area, else "2 steps to the next landmark".
+    var nextLandmarkCaption: String {
+        guard let next = nextLandmark, let steps = stepsToNextLandmark else { return "More of the Wander opens soon" }
+        let count = steps == 1 ? "1 step" : "\(steps) steps"
+        if let area = Trail.area(of: next.id), area.id != currentArea?.id {
+            return "\(count) to the \(area.name)"
+        }
+        return "\(count) to the next landmark"
+    }
+}
+
+extension Landmark {
+    /// The find card's line: "Sprout found a speckled egg in the reeds!"
+    func findSentence(petName: String) -> String {
+        let what = name.prefix(1).lowercased() + name.dropFirst()
+        switch content {
+        case .egg, .decoration, .pouch:
+            return "\(petName) found \(what)!"
+        case .visitor:
+            return "\(petName) met \(what)!"
+        case .scenery:
+            if step == Trail.length { return "\(petName) reached the meadow. More of the Wander opens soon." }
+            return "\(petName) reached \(what)."
+        }
+    }
+
+    /// Eggs and visitors make the pet thrill; everything else makes it happy.
+    var isThrilling: Bool {
+        switch content {
+        case .egg, .visitor: return true
+        case .decoration, .pouch, .scenery: return false
+        }
+    }
+}
+
+extension LandmarkContent {
+    /// The find icon in Wander/.
+    var iconPath: String {
+        switch self {
+        case .egg: return "Wander/find-egg"
+        case .decoration: return "Wander/find-gift"
+        case .pouch: return "Wander/find-pouch"
+        case .visitor: return "Wander/find-visitor"
+        case .scenery: return "Wander/find-scenery"
+        }
+    }
+
+    /// The stand-in when the icon is missing.
+    var symbol: String {
+        switch self {
+        case .egg: return "oval.portrait.fill"
+        case .decoration: return "gift.fill"
+        case .pouch: return "bag.fill"
+        case .visitor: return "pawprint.fill"
+        case .scenery: return "leaf.fill"
+        }
+    }
+}
+
+/// A find's icon, or its symbol when the sprite is missing.
+struct FindIcon: View {
+    let content: LandmarkContent
+
+    var body: some View {
+        if SpriteLibrary.image(content.iconPath) != nil {
+            SpriteImage(path: content.iconPath)
+        } else {
+            Image(systemName: content.symbol).font(.title3).foregroundStyle(.secondary)
+        }
+    }
+}
+
+extension NestStatus {
+    /// "Hatches in 2 check-ins".
+    var countdownText: String {
+        checkInsLeft == 1 ? "Hatches in 1 check-in" : "Hatches in \(checkInsLeft) check-ins"
     }
 }

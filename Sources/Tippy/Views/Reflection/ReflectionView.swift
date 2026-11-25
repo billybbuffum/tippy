@@ -1,10 +1,12 @@
 import SwiftUI
 import TippyModeration
+import TippyWander
 
 /// The day's optional reflection: one prompt, a short answer, and Skip.
 /// Saving the day never depends on it.
 struct ReflectionView: View {
     @Environment(JournalModel.self) private var model
+    @Environment(WanderModel.self) private var wander
     let day: LocalDate
     let done: () -> Void
 
@@ -14,8 +16,14 @@ struct ReflectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 12) {
-                PetView(mood: .happy)
-                    .frame(width: 72, height: 72)
+                Group {
+                    if let pet = wander.shownPet {
+                        PetView(mood: .happy, species: pet.species)
+                    } else {
+                        EggView(species: wander.hatchingPet?.species ?? wander.nest?.species ?? .pondling, wiggles: false)
+                    }
+                }
+                .frame(width: 72, height: 72)
                 Text(model.prompt(for: day).text)
                     .font(.title3.weight(.semibold))
                     .accessibilityIdentifier("reflection-prompt-label")

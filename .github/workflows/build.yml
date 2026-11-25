@@ -55,6 +55,10 @@ jobs:
         # the iOS SDK and is only built below.
         run: swift test --package-path Modules/TippyModeration
 
+      - name: Test the Wander package
+        # Steps, the trail, eggs and hatching: Foundation plus Moderation.
+        run: swift test --package-path Modules/TippyWander
+
       - name: Install xtool
         run: brew install xtool-org/tap/xtool
 

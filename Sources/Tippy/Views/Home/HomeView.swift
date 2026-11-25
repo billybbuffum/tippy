@@ -1,27 +1,27 @@
 import SwiftUI
 import TippyModeration
+import TippyWander
 
 struct HomeView: View {
     @Environment(JournalModel.self) private var model
+    @Environment(WanderModel.self) private var wander
     @State private var showingLog = false
     @State private var showingSettings = false
     @State private var reflecting: DayItem?
+    @State private var showingWander = false
+    @State private var hatching: PetItem?
+    @State private var isFront = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    PetView(mood: model.mood)
-                        .frame(maxWidth: 240)
-                        .accessibilityIdentifier("pet-view")
-                    VStack(spacing: 6) {
-                        Text(model.settings.petName)
-                            .font(.title2.bold())
-                            .accessibilityIdentifier("pet-name-label")
-                        Text(model.mood.caption(petName: model.settings.petName))
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .accessibilityIdentifier("pet-mood-label")
+                    PetScene()
+                    WanderChips { showingWander = true }
+                    if let find = wander.unannouncedFinds.first {
+                        FindCard(landmark: find, petName: wander.shownPet?.name ?? model.settings.petName) {
+                            withAnimation { wander.announceFind(find.id) }
+                        }
                     }
                     if model.shouldOfferReminder {
                         // Near the top: it's shown once, so it must be in view
@@ -33,6 +33,11 @@ struct HomeView: View {
                 }
                 .padding()
             }
+            .onAppear {
+                isFront = true
+                presentHatch()
+            }
+            .onDisappear { isFront = false }
             .safeAreaInset(edge: .bottom) { actions }
             .navigationTitle("Tippy")
             .navigationBarTitleDisplayMode(.inline)
@@ -56,10 +61,22 @@ struct HomeView: View {
                     .accessibilityIdentifier("settings-button")
                 }
             }
-            .sheet(isPresented: $showingLog) { LogDrinkView() }
-            .sheet(isPresented: $showingSettings) { SettingsView() }
-            .sheet(item: $reflecting) { item in ReflectionSheet(day: item.day) }
+            .navigationDestination(isPresented: $showingWander) { TrailMapView() }
+            .sheet(isPresented: $showingLog, onDismiss: presentHatch) { LogDrinkView() }
+            .sheet(isPresented: $showingSettings, onDismiss: presentHatch) { SettingsView() }
+            .sheet(item: $reflecting, onDismiss: presentHatch) { item in ReflectionSheet(day: item.day) }
+            .fullScreenCover(item: $hatching) { item in HatchView(petID: item.id) }
+            .onChange(of: wander.state.pendingHatch) { presentHatch() }
         }
+    }
+
+    /// The hatch moment waits until Home is in front with no sheet up (a
+    /// check-in hatches the egg, then the reflection usually follows), so
+    /// it plays as soon as she's back.
+    private func presentHatch() {
+        guard isFront, hatching == nil, !showingLog, !showingSettings, reflecting == nil,
+              let id = wander.state.pendingHatch else { return }
+        hatching = PetItem(id: id)
     }
 
     private var todayLine: String {

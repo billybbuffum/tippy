@@ -34,6 +34,24 @@ MANIFEST = [
     "Drinks/beer.png",
     "Drinks/wine.png",
     "Drinks/cocktail.png",
+    # The Wander (spec 03): the other species' mood poses and eggs, their
+    # idle, delight and egg-wiggle strips, the hatch, the trail map's
+    # banners, stones, find icons and effects, and the nest.
+    *[f"Pet/{pet}-{pose}.png" for pet in ("moth", "turtle", "seal", "fox")
+      for pose in ("thriving", "happy", "okay", "concerned", "waiting", "egg")],
+    *[f"Animations/{pet}-{loop}.png" for pet in ("moth", "turtle", "seal", "fox")
+      for loop in ("idle", "delight", "egg-wiggle")],
+    "Animations/hatch.png",
+    "Animations/dust-puff.png",
+    "Animations/sparkle.png",
+    "Animations/find-glow.png",
+    *[f"Wander/area-{area}.png" for area in
+      ("pond-shore", "reed-bed", "willow-grove", "mossy-woods", "mushroom-glade", "meadow")],
+    "Wander/node-found.png",
+    "Wander/node-next.png",
+    "Wander/node-locked.png",
+    *[f"Wander/find-{kind}.png" for kind in ("egg", "gift", "pouch", "visitor", "scenery")],
+    "Camp/nest.png",
 ]
 
 

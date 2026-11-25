@@ -20,9 +20,10 @@ xtool.yml                          app (+ future extension) bundle wiring
 Config/Info.plist                  keys merged on top of xtool's defaults
 Assets/DefaultIcon.png             the home-screen icon (original placeholder art)
 Modules/TippyModeration/           Moderation context (domain): Foundation-only, Swift 6 mode, unit-tested
-Sources/Tippy/App/                 composition root (TippyApp) and RootView
-Sources/Tippy/Model/               application layer: JournalModel, ports
-Sources/Tippy/Adapters/            port implementations (file store, notifications)
+Modules/TippyWander/               Wander context (domain): steps, the trail, eggs, hatching, pets; depends on Moderation
+Sources/Tippy/App/                 composition root (TippyApp, AppModels) and RootView
+Sources/Tippy/Model/               application layer: JournalModel, WanderModel, ports
+Sources/Tippy/Adapters/            port implementations (file stores, notifications)
 Sources/Tippy/Views/<Feature>/     SwiftUI, one folder per feature
 Sources/Tippy/Demo/                UI smoke test demo mode: seeds, fixed clock, stand-in adapters
 Sources/Tippy/Resources/Sprites/   the sprites the app ships, copied from Assets/Sprites by scripts/sync-sprites.py
@@ -48,7 +49,7 @@ Only `main` (or "Run workflow") goes on to sign and publish. This repo is public
 are free. That's why Tippy builds and smoke-tests everything automatically, where ChoreLock (private, billed
 minutes) keeps them opt-in.
 
-The `ipa` job tests `Modules/TippyModeration`, then builds an unsigned IPA (artifact `Tippy-unsigned-ipa`). With
+The `ipa` job tests `Modules/TippyModeration` and `Modules/TippyWander`, then builds an unsigned IPA (artifact `Tippy-unsigned-ipa`). With
 the repository secrets below in place, the `sign` job fetches (or creates) a development profile for
 `com.billy.tippy`, re-signs the app (`scripts/resign.sh`), and uploads `Tippy-signed-ipa`. Then the `pages` job
 publishes the install page. Profiles are regenerated on every run, so a newly registered phone is included in
@@ -118,9 +119,12 @@ Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`S
 | `onboarding` | first launch |
 | `mid-week` | 3 beers Monday, 3 Tuesday, Wednesday drink-free with a reflection, today not logged, reminder not offered yet |
 | `one-drink` | one beer logged today, nothing else |
+| `egg-ready` | set up, nothing logged, no Wander saved yet: the starter egg is in the nest |
+| `wander-mid` | Nov 11–18 logged with one reflection: 9 steps on the Wander, the pondling out, the moth egg nested one check-in from hatching |
 
-Every seed fixes the clock at Thursday 19 November 2026, 6 PM, keeps the journal in memory, and sends no
-notifications, so runs are repeatable.
+Every seed fixes the clock at Thursday 19 November 2026, 6 PM, keeps the journal and the Wander in memory, and sends no
+notifications, so runs are repeatable. Every seed except `onboarding` and `egg-ready` has already hatched the pondling
+(named after the journal's pet name) and caught the Wander up with its journal, so it opens with nothing new to celebrate.
 
 On a Mac with a current Xcode, run `brew install xcodegen ffmpeg`, then `scripts/ui-smoke.sh`. This writes `out/ui-smoke/`.
 `UI_SMOKE_ONLY="home log-drink"` runs a subset.
@@ -129,6 +133,7 @@ On a Mac with a current Xcode, run `brew install xcodegen ffmpeg`, then `scripts
 
 ```bash
 swift test --package-path Modules/TippyModeration
+swift test --package-path Modules/TippyWander
 ```
 
 This needs only Foundation, so it runs on any Mac (or Linux) with a Swift toolchain.

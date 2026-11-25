@@ -40,6 +40,22 @@ final class JournalModel {
         self.message = problem
     }
 
+    // MARK: Change hook
+
+    /// Downstream models (Rewards, Wander) subscribe here in the composition root.
+    /// Called after every successful change, on refresh (app to the front), and once
+    /// when a subscriber is added, always on the main actor.
+    private var changeHandlers: [@MainActor (Journal, LocalDate) -> Void] = []
+
+    func onJournalChange(_ handler: @escaping @MainActor (Journal, LocalDate) -> Void) {
+        changeHandlers.append(handler)
+        handler(journal, today)
+    }
+
+    private func notifyChange() {
+        for handler in changeHandlers { handler(journal, today) }
+    }
+
     // MARK: Time
 
     var now: Date {
@@ -97,6 +113,7 @@ final class JournalModel {
     func refresh() {
         tick += 1
         rescheduleReminders()
+        notifyChange()
     }
 
     /// Logs a new drink. True when it was saved.
@@ -234,6 +251,7 @@ final class JournalModel {
             message = "Couldn't save: \(error.localizedDescription)"
         }
         rescheduleReminders()
+        notifyChange()
         return true
     }
 

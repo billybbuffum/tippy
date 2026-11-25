@@ -54,7 +54,7 @@ Every Swift file in the app lives in one of those five folders, `Views/<Feature>
 The domain is where every business rule lives. If it can be decided without a screen, a disk or the network, it
 goes here, with a unit test.
 
-- **One package per bounded context.** Today that's `TippyModeration`. Planned contexts are in
+- **One package per bounded context.** Today that's `TippyModeration` and `TippyWander`. Planned contexts are in
   [section 8](#8-bounded-contexts). A context's public API is its *published language*: only types marked
   `public` are visible to others.
 - **Value types.** Entities and value objects are `struct`s; closed sets of cases are `enum`s. They are `Sendable`,
@@ -136,11 +136,15 @@ goes here, with a unit test.
 
 ## 7. Composition root and demo mode
 
-- `App/TippyApp.swift` builds the model graph once:
-  - on a device: `FileJournalStore`, `NotificationReminderScheduler`, `.autoupdatingCurrent` and `{ Date() }`;
-  - under the UI smoke test, `UISmokeMode.makeModel()` swaps in `InMemoryJournalStore`, `SilentReminderScheduler`, a
-    fixed calendar and a fixed clock (Thursday 19 November 2026, 6 PM).
-- Models reach views through `.environment(model)` on the `WindowGroup`.
+- `App/TippyApp.swift` builds the model graph once, as `AppModels` (one model per context):
+  - on a device: `FileJournalStore`, `FileWanderStore`, `NotificationReminderScheduler`, `.autoupdatingCurrent` and
+    `{ Date() }`;
+  - under the UI smoke test, `UISmokeMode.makeModels()` swaps in `InMemoryJournalStore`, `InMemoryWanderStore`,
+    `SilentReminderScheduler`, a fixed calendar and a fixed clock (Thursday 19 November 2026, 6 PM).
+- Downstream models follow the journal through its change hook, `JournalModel.onJournalChange`, which both
+  composition roots (and only they) subscribe to: `wander.sync(journal:today:)` runs after every change, on refresh,
+  and once at launch.
+- Models reach views through `.environment(...)` on the `WindowGroup`, one call per model.
 - Demo mode is compiled out on devices (`isActive` is a constant `false` off the simulator), and every seed is
   named in both `UISmokeMode.Seed` and `SmokeScenario.Seed`.
 
@@ -150,7 +154,7 @@ goes here, with a unit test.
 |---|---|---|---|
 | **Moderation** | `TippyModeration` | The journal: drink entries, drink-free days, reflections, the weekly goal per week, settings, week summaries, pet mood, reminder plan | Built |
 | **Rewards** | `TippyRewards` | The coin ledger, the shop catalog, purchases, decorations placed in the camp, weekly recaps | Next |
-| **Wander** | `TippyWander` | The step ledger, the trail (areas, landmarks, finds), eggs, hatching, the pet collection, the active pet | Planned |
+| **Wander** | `TippyWander` | The step ledger, the trail (areas, landmarks, finds), eggs, hatching, the pet collection, the active pet | Part 1 built (spec 03a); the collection screen, the visitor and finds into Rewards are next |
 
 Rules between contexts:
 - **Downstream contexts read upstream facts through public API only.** Rewards and Wander depend on Moderation
@@ -251,7 +255,7 @@ Reviewers also check what a script can't:
 3. **Port, if it needs the platform.** Declare a protocol in `Model/Ports.swift` (or a repository beside its
    aggregate), then write the adapter in `Adapters/` and a stand-in in `Demo/`.
 4. **Model.** Add derived properties and one intent method per use case, all going through `mutate`.
-5. **Composition.** Wire any new adapter in `App/TippyApp.swift` and `UISmokeMode.makeModel()`.
+5. **Composition.** Wire any new adapter in `App/TippyApp.swift` and `UISmokeMode.makeModels()`.
 6. **View.** Put it in its feature folder, reading the model, with accessibility identifiers.
 7. **Smoke scenario and seed.** Follow `CLAUDE.md`.
 8. Run `scripts/check-architecture.py` and `swift test --package-path Modules/<Context>`, then push and read CI.
@@ -281,7 +285,7 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Week summary** | A week's total, goal, drink-free days, days elapsed | `WeekSummary` |
 | **Pace** | Standard drinks so far ÷ the pro-rated weekly goal | `pace` |
 | **Mood** | The pet's state from pace and check-ins: thriving, happy, okay, concerned, waiting | `PetMood`, `MoodPolicy` |
-| **Pet** | The user's companion; named in onboarding | `petName`, `PetView` |
+| **Pet** | The user's companion; the first one is named in onboarding. Each pet has its own name, kept in the Wander | `Pet`, `PetView`, `petName` (the active pet's name, kept in step for reminders) |
 | **Reminder** | The evening nudge on a day not yet checked in | `ReminderPlanner`, `ReminderScheduling` |
 | **Backup** | The journal exported as a file; restoring replaces everything | `JournalCodec`, `exportBackup` |
 | **Onboarding** | The first-launch questions | `hasOnboarded`, `OnboardingView` |
@@ -289,5 +293,13 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Coins** *(Rewards)* | Earned per check-in, with bonuses for drink-free days and weeks within the goal; recorded once per fact, never revoked | — |
 | **Decoration**, **purchase**, **placement** *(Rewards)* | A shop item; buying it; putting it in a camp spot (moving and storing are free) | — |
 | **Weekly recap** *(Rewards)* | The summary shown once a week ends, awarding its goal bonus | — |
-| **The Wander**, **step**, **landmark** *(Wander)* | The trail out from the pond; one step per check-in and per reflection; spots holding eggs, finds and visitors | — |
-| **Egg**, **hatch**, **collection**, **active pet** *(Wander)* | Found on the Wander, hatched after more check-ins, kept in the collection; the active pet is the one out in the camp | — |
+| **The Wander** *(Wander)* | The trail her pet walks out from the pond, one step at a time | `WanderState`, `WanderModel`, `TrailMapView` |
+| **Step** *(Wander)* | One per check-in and one per reflection, for days within 7 days of today; recorded once, never taken back. The trail position is the number of steps | `StepKey`, `StepAward`, `StepPolicy`, `position` |
+| **Trail**, **area** *(Wander)* | The fixed route (version 1, 60 steps); its stretches, each with a banner: Pond Shore, Reed Bed, Willow Grove, Mossy Woods, Mushroom Glade, Meadow | `Trail`, `Area` |
+| **Landmark** *(Wander)* | A spot on the trail at a given step, holding an egg, a decoration, a coin pouch, a visitor or just scenery | `Landmark`, `LandmarkContent` |
+| **Find** *(Wander)* | Reaching a landmark: it's marked found that day, never un-found, and announced once on a find card | `found`, `foundLandmarks`, `FindCard` |
+| **Egg**, **nest**, **basket** *(Wander)* | An egg from a landmark (or the starter); the nest holds one egg at a time and counts its check-ins; the others wait in the basket in the order found | `Egg`, `nestedEgg`, `basket` |
+| **Hatch** *(Wander)* | The nested egg becomes a pet once enough check-ins pass (the starter after 1, others after 3); she names it in the hatch moment | `hatchAfterCheckIns`, `pendingHatch`, `HatchView` |
+| **Species** *(Wander)* | The kind of pet: pondling, lilac moth, leaf-shell turtle, spotted seal, cinnamon fox | `Species` |
+| **Collection**, **active pet** *(Wander)* | Every hatched pet; the one out in the camp, shown on Home | `pets`, `activePetID`, `setActive` |
+| **Visitor** *(Wander)* | A one-time guest found on the trail (the fox at dusk), seen once | `LandmarkContent.visitor`, `markVisitorSeen` |

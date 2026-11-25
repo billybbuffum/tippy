@@ -1,7 +1,6 @@
 # Tippy sprite pack
 
-Original pixel art of a teal pond creature and objects for its camp. Each sprite
-is a separate 256 × 256 RGBA PNG with a transparent background.
+Original pixel art of a teal pond creature and objects for its camp. Stills are 256 × 256 RGBA PNGs with transparent backgrounds unless a table specifies a different size.
 
 | Folder | Sprites |
 | --- | --- |
@@ -20,8 +19,8 @@ to the app target's resources and load it from that resource bundle.
 
 ## Animations
 
-Each PNG strip has four transparent 128 × 128 frames in a single row.
-Read left to right, starting at x = 0, 128, 256, and 384. The GIFs show
+PNG strips contain transparent 128 × 128 frames in a single row.
+Read left to right in 128-pixel increments. The GIFs show
 the loops at their intended speed.
 
 | Strip | Frame durations (ms) | Preview |
@@ -64,3 +63,33 @@ beside its identically named PNG strip.
 | Beer | [Bob and glint](Animations/beer-bob.gif) |
 | Wine | [Sway](Animations/wine-sway.gif) |
 | Cocktail | [Glint](Animations/cocktail-glint.gif) |
+
+
+### Camp and Wander
+
+| Folder | Files | Size |
+| --- | --- | --- |
+| `Camp/` | `pond-background`, `pond-background-dusk` | 512 × 512, opaque |
+| `Camp/` | `lily-planter`, `reed-cluster`, `flower-pot`, `stepping-stones`, `bench`, `string-lights`, `willow-arch`, `firefly-jar`, `nest` | 256 × 256 |
+| `Rewards/` | `coin-pouch` | 256 × 256 |
+| `Wander/` | `area-pond-shore`, `area-reed-bed`, `area-willow-grove`, `area-mossy-woods`, `area-mushroom-glade`, `area-meadow` | 512 × 256, opaque |
+| `Wander/` | `node-found`, `node-next`, `node-locked`, `find-egg`, `find-gift`, `find-pouch`, `find-visitor`, `find-scenery` | 64 × 64 |
+| `Pet/` | `<pet>-egg`, `<pet>-okay`, `<pet>-concerned`, `<pet>-waiting` for moth, turtle, seal, and fox, plus `fox-dusk` | 256 × 256 |
+
+Both Camp backgrounds share the placement coordinates defined in the [art spec](../../docs/specs/05-art-requests.md).
+
+| Strip | Frames | Frame durations (ms) | Preview |
+| --- | --- | --- | --- |
+| `firefly-jar-glow.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/firefly-jar-glow.gif) |
+| `fox-egg-wiggle.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/fox-egg-wiggle.gif) |
+| `fox-idle.png` | 4 | 480, 160, 250, 160 | [GIF](Animations/fox-idle.gif) |
+| `hatch.png` | 6 | 300, 120, 120, 120, 200, 400 | [GIF](Animations/hatch.gif) |
+| `lily-planter-bob.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/lily-planter-bob.gif) |
+| `moth-egg-wiggle.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/moth-egg-wiggle.gif) |
+| `moth-idle.png` | 4 | 480, 160, 250, 160 | [GIF](Animations/moth-idle.gif) |
+| `reed-cluster-sway.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/reed-cluster-sway.gif) |
+| `seal-egg-wiggle.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/seal-egg-wiggle.gif) |
+| `seal-idle.png` | 4 | 480, 160, 250, 160 | [GIF](Animations/seal-idle.gif) |
+| `string-lights-twinkle.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/string-lights-twinkle.gif) |
+| `turtle-egg-wiggle.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/turtle-egg-wiggle.gif) |
+| `turtle-idle.png` | 4 | 480, 160, 250, 160 | [GIF](Animations/turtle-idle.gif) |

@@ -35,3 +35,32 @@ the loops at their intended speed.
 [`Assets/DefaultIcon.png`](../DefaultIcon.png) is the matching opaque 1024 ×
 1024 icon. The existing build script uses it when the optional private icon
 is unavailable.
+
+### Alternate pets
+
+The cinnamon fox, lilac moth, leaf-shell turtle, and spotted seal each have a
+`<pet>-happy.png` idle pose and a `<pet>-thriving.png` delighted pose in `Pet/`.
+Each also has a four-frame `<pet>-delight.png` strip in `Animations/`, with
+frame durations of 620, 180, 120, and 180 ms.
+
+[Fox](Animations/fox-delight.gif) · [Moth](Animations/moth-delight.gif) ·
+[Turtle](Animations/turtle-delight.gif) · [Seal](Animations/seal-delight.gif)
+
+### Small prop loops
+
+The 650 ms resting frame gives each of these four-frame loops a quiet beat.
+Use frame durations of 650, 140, 140, and 170 ms. Each preview links to the GIF
+beside its identically named PNG strip.
+
+| Sprite | Preview |
+| --- | --- |
+| Egg | [Wiggle](Animations/egg-wiggle.gif) |
+| Sprout | [Sway](Animations/sprout-sway.gif) |
+| Mushroom | [Bob](Animations/mushroom-bob.gif) |
+| Watering can | [Tilt](Animations/watering-can-tilt.gif) |
+| Lantern | [Glow](Animations/lantern-glow.gif) |
+| Seashell | [Glint](Animations/seashell-glint.gif) |
+| Water | [Glint](Animations/water-glint.gif) |
+| Beer | [Bob and glint](Animations/beer-bob.gif) |
+| Wine | [Sway](Animations/wine-sway.gif) |
+| Cocktail | [Glint](Animations/cocktail-glint.gif) |

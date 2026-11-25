@@ -66,6 +66,7 @@ final class WanderScenarios: SmokeScenario {
         let caughtUp = NSPredicate(format: "value == %@", "Step 2")
         expectation(for: caughtUp, evaluatedWith: element("wander-pet"))
         waitForExpectations(timeout: 8)
+        XCTAssertTrue(element("wander-skip-button").waitForNonExistence(timeout: 8), "wait through landmark reveal")
         XCTAssertFalse(element("find-card").exists, "a find dismissed on Home is not revealed again")
         goBack(from: "The Wander")
         element("wander-button").tap()

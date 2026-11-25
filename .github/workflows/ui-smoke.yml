@@ -9,14 +9,15 @@ name: UI smoke
 # test" in README.md and CLAUDE.md. The cheap "Smoke scenario present"
 # check is a separate workflow (smoke-scenario-check.yml).
 #
-# Opt-in only: macOS minutes are billed, so this runs when the `smoke`
-# label is added to a pull request (remove and re-add it to run again on
-# a newer push), or by hand from the Actions tab. It does not run on
-# every push.
+# Runs on every pull request (opened, each push, reopened) and by hand
+# from the Actions tab. This repo is public, so the macOS runner is free;
+# ChoreLock, being private, makes this opt-in behind a `smoke` label.
+# A pull request from a fork gets a read-only token, so it still runs the
+# scenarios and uploads the artifacts but skips the GIFs and the comment.
 
 on:
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
@@ -30,7 +31,6 @@ concurrency:
 jobs:
   smoke:
     name: Simulator scenarios
-    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'smoke'
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -86,7 +86,7 @@ jobs:
 
       - name: Work out the feature demos
         id: demos
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.pull_request.number }}
@@ -102,7 +102,7 @@ jobs:
 
       - name: Publish the GIFs to the pr-media branch
         id: publish
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.pull_request.number }}
@@ -119,7 +119,7 @@ jobs:
           fi
 
       - name: Comment on the pull request
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.pull_request.number }}

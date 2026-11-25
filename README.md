@@ -35,10 +35,11 @@ docs/                              research, product plan, server architecture r
 
 ## Building and installing
 
-The `Build` workflow (`.github/workflows/build.yml`) runs on every push to `main`, so work happens on a branch
-and lands by pull request; each merge is one build. "Run workflow" on the Actions page builds any branch by hand,
-and a push to a `build/**` branch compiles it without signing (a cheap way to check that a branch builds before
-merging). Use both sparingly: macOS runner minutes cost ten times Linux ones.
+The `Build` workflow (`.github/workflows/build.yml`) builds **every push to every branch**: it tests
+`Modules/TippyModeration` and builds an unsigned IPA, so a branch shows whether it compiles before it's merged.
+Only `main` (or "Run workflow") goes on to sign and publish. This repo is public, so GitHub-hosted macOS runners
+are free. That's why Tippy builds and smoke-tests everything automatically, where ChoreLock (private, billed
+minutes) keeps them opt-in.
 
 The `ipa` job tests `Modules/TippyModeration`, then builds an unsigned IPA (artifact `Tippy-unsigned-ipa`). With
 the repository secrets below in place, the `sign` job fetches (or creates) a development profile for
@@ -91,12 +92,13 @@ ideviceinstaller install Tippy.ipa      # later builds: ideviceinstaller upgrade
 
 ## UI smoke test
 
-This works exactly as in ChoreLock. A pull request gets a simulator run of every XCUITest scenario in
-`UISmoke/Tests/`, with a recording per scenario and a sticky PR comment ("Feature demo" first, then the
-"Regression suite" table). It's opt-in, because macOS minutes are billed, and runs when the `smoke` label is added
-to the PR. **Smoke scenario present** (`smoke-scenario-check.yml`, seconds on Linux) fails a PR that changes
-`Sources/` or `Modules/` without adding or changing a scenario or carrying a `Smoke-demo:` line in its body.
-GIFs live on the orphan `pr-media` branch and are removed when the PR closes.
+This works as in ChoreLock, except that it runs **automatically on every pull request** (each push included),
+not behind a `smoke` label. Every XCUITest scenario in `UISmoke/Tests/` runs on the simulator with a recording
+each, and a sticky PR comment shows "Feature demo" first (the scenarios the PR added or changed, GIFs inline),
+then the "Regression suite" table. **Smoke scenario present** (`smoke-scenario-check.yml`) fails a PR that
+changes `Sources/` or `Modules/` without adding or changing a scenario or carrying a `Smoke-demo:` line in its
+body. GIFs live on the orphan `pr-media` branch and are removed when the PR closes. A PR from a fork runs the
+scenarios and uploads the artifacts but gets no comment, because its token is read-only.
 
 Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`Sources/Tippy/UISmokeMode.swift`).
 `-ui-smoke-seed <name>` picks the starting state:

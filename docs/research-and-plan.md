@@ -180,7 +180,7 @@ WeekSummary{ weekStart, totalStd, goal, metGoal, coinsAwarded }   // derived/cac
 - **UserNotifications** for the daily reminder (local, no server)
 - **Swift Charts** for the weekly chart
 - **SwiftUI animations** (or Lottie/Rive later) for the pet
-- **UI smoke test**: XCUITest scenarios on the simulator, recorded to GIFs on PRs (opt-in `smoke` label)
+- **UI smoke test**: XCUITest scenarios on the simulator, recorded to GIFs on PRs (automatically on every PR; free on this public repo)
 - **GitHub Actions + GitHub Pages** for signed builds and over-the-air installs
 
 ### Server (only if ever needed)

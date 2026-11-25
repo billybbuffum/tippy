@@ -1,11 +1,21 @@
 name: Build
 
+# This repo is public, so GitHub-hosted runners (macOS included) cost
+# nothing: every push to any branch is built and its domain tests run.
+# Only main (or "Run workflow") goes on to sign and publish the install
+# page. Pull requests from forks are built through pull_request, since
+# their pushes happen elsewhere; same-repo PRs are already covered by push.
 on:
   push:
-    # main: full build and signed IPA. build/**: compile check only (the
-    # sign job is skipped), for trying a branch without merging it.
-    branches: [main, 'build/**']
+    branches: ['**']
+  pull_request:
   workflow_dispatch:
+
+concurrency:
+  # A newer push to the same branch supersedes the older build, except on
+  # main, where every merge keeps its own signed build.
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   # One bundle today (the app, no extensions). Add an extension's bundle ID
@@ -16,6 +26,8 @@ env:
 jobs:
   ipa:
     name: Build unsigned IPA
+    # Fork PRs only; a same-repo PR's commits are built by its push.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -91,7 +103,7 @@ jobs:
   sign:
     name: Sign with Apple developer account
     needs: ipa
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: macos-latest
     timeout-minutes: 20
     outputs:

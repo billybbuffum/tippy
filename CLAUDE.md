@@ -19,19 +19,21 @@ ChoreLock** (`billybbuffum/ChoreLock`). See README.md for how the pieces fit,
 
 ## Building and checking
 
-- Real builds happen on CI: `.github/workflows/build.yml` on every push to `main` (device IPA, xtool), and
-  `.github/workflows/ui-smoke.yml` on a labelled pull request (simulator, XCUITest). Keep the build path
-  in step with ChoreLock's; don't restructure it.
+- Real builds happen on CI. `.github/workflows/build.yml` runs on **every push to every branch** (domain tests
+  + unsigned device IPA via xtool; only `main` signs and publishes). `.github/workflows/ui-smoke.yml` runs on
+  **every pull request** (simulator, XCUITest). The repo is public, so macOS runners are free. Push your branch
+  and read the run's result rather than guessing whether it compiles. Keep the build path in step with
+  ChoreLock's; don't restructure it.
 - Keep `swift-tools-version: 6.0` and the `Package.swift` product layout (one `.library` per bundle, the app's
   product name matching `product:` in xtool.yml).
 - `Modules/TippyModeration` builds and tests anywhere with Swift: `swift test --package-path Modules/TippyModeration`.
-- Work on a branch, open a pull request, and watch its checks. macOS minutes are billed, so don't re-run gratuitously.
+- Work on a branch, open a pull request, and watch its checks.
 
 ## When you add a feature or fix a bug
 
-A pull request can get a **UI smoke test** run. It is opt-in: it runs only when the `smoke` label is added.
-**Never add or re-add the label yourself: only the user starts a smoke run, by adding it or by asking you to.**
-Still write the scenario, so the run is ready whenever they choose to start it:
+Every pull request gets a **UI smoke test** run automatically: the app is built for the simulator, each
+scenario in `UISmoke/Tests/` is driven by XCUITest and recorded, and a comment on the PR shows the result.
+The reviewer must be able to watch your change, so:
 
 1. **Give new controls accessibility identifiers.** Use kebab-case, on the control itself
    (`.accessibilityIdentifier("log-drink-button")`). Scenarios tap by identifier, never by visible text
@@ -46,7 +48,9 @@ Still write the scenario, so the run is ready whenever they choose to start it:
    `Smoke-demo: <scenario>, …` on its own line in the PR body. A change with nothing to show on screen gets
    `Smoke-demo: none`. The `Smoke scenario present` check fails a PR that changes `Sources/` or `Modules/` with
    neither a changed scenario nor a `Smoke-demo:` line.
-5. **If the user has had the smoke test run, check its comment before marking the PR ready.**
+5. **Check the smoke comment before marking the PR ready.** The "Feature demo" section should show your change
+   doing what it claims, and the "Regression suite" table should be all green. Fix what is red rather than
+   deleting a scenario.
 
 `scripts/smoke-scenarios.py list` prints the scenarios. `scripts/smoke-scenarios.py changed --base origin/main`
 prints the ones your branch touched.

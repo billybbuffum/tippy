@@ -10,7 +10,8 @@ struct SettingsView: View {
     @State private var petName = ""
     @State private var exportURL: URL?
     @State private var importing = false
-    @State private var pendingImport: Data?
+    @State private var pendingRestore: BackupModel.PendingRestore?
+    @Environment(BackupModel.self) private var backup
 
     var body: some View {
         NavigationStack {
@@ -63,16 +64,32 @@ struct SettingsView: View {
                         }
                         .accessibilityIdentifier("export-backup-button")
                     }
+                    Text("Backups include your notes and reflections. Keep them somewhere private.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("export-privacy-note")
                     Button {
                         importing = true
                     } label: {
                         Label("Restore from a backup", systemImage: "square.and.arrow.down")
                     }
                     .accessibilityIdentifier("import-backup-button")
+                    if UISmokeMode.isActive {
+                        // XCUITest can't drive the system file picker reliably.
+                        Button("Use demo backup") {
+                            if let data = UISmokeMode.demoBackup() { pendingRestore = backup.prepareRestore(from: data) }
+                        }
+                        .accessibilityIdentifier("restore-demo-button")
+                    }
+                    if let restoredAt = backup.restoredAt {
+                        Label("Backup restored at \(restoredAt.formatted(date: .omitted, time: .shortened))", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .accessibilityIdentifier("restore-done-label")
+                    }
                 } header: {
                     Text("Backup")
                 } footer: {
-                    Text("Everything stays on this phone. Export a backup now and then (to Files or iCloud Drive) so a lost phone doesn't lose your history.")
+                    Text("Everything stays on this phone. Export a backup now and then (to Files or iCloud Drive) so a lost phone doesn't lose your history. A backup holds your log, coins, decorations and pets.")
                 }
                 Section("About") {
                     Text("Tippy is not medical advice. If you drink heavily every day, talk to a doctor before cutting back: stopping suddenly can be dangerous.")
@@ -93,22 +110,16 @@ struct SettingsView: View {
                 }
             }
             .task(id: model.journal) {
-                exportURL = try? model.exportBackup()
+                exportURL = try? backup.export()
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
                 guard case .success(let url) = result else { return }
                 let scoped = url.startAccessingSecurityScopedResource()
                 defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                pendingImport = try? Data(contentsOf: url)
+                if let data = try? Data(contentsOf: url) { pendingRestore = backup.prepareRestore(from: data) }
             }
-            .alert("Replace everything with this backup?", isPresented: importConfirmation) {
-                Button("Replace", role: .destructive) {
-                    if let data = pendingImport { model.importBackup(data) }
-                    pendingImport = nil
-                }
-                Button("Cancel", role: .cancel) { pendingImport = nil }
-            } message: {
-                Text("Everything logged on this phone is replaced by what's in the backup.")
+            .sheet(item: $pendingRestore) { pending in
+                RestorePreviewView(pending: pending)
             }
         }
     }
@@ -166,10 +177,6 @@ struct SettingsView: View {
                 }
             }
         )
-    }
-
-    private var importConfirmation: Binding<Bool> {
-        Binding(get: { pendingImport != nil }, set: { if !$0 { pendingImport = nil } })
     }
 
     private var currencyCode: String { Locale.current.currency?.identifier ?? "USD" }

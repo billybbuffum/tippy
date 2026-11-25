@@ -155,6 +155,7 @@ goes here, with a unit test.
 | **Moderation** | `TippyModeration` | The journal: drink entries, drink-free days, reflections, the weekly goal per week, settings, week summaries, pet mood, reminder plan | Built |
 | **Rewards** | `TippyRewards` | The coin ledger, the shop catalog, purchases, decorations placed in the camp, weekly recaps | Built (coins, recaps, shop, camp) |
 | **Wander** | `TippyWander` | The step ledger, the trail (areas, landmarks, finds), eggs, hatching, the pet collection, the active pet | Built (trail, nest, hatching, the pet collection, the visitor) |
+| *(integration)* | `TippyBackup` | The backup bundle (journal, rewards, Wander in one file, v1 journal-only files still read) and the restore preview; no rules of its own | Built |
 
 Rules between contexts:
 - **Downstream contexts read upstream facts through public API only.** Rewards and Wander depend on Moderation
@@ -290,7 +291,7 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Mood** | The pet's state from pace and check-ins: thriving, happy, okay, concerned, waiting | `PetMood`, `MoodPolicy` |
 | **Pet** | The user's companion; the first one is named in onboarding. Each pet has its own name, kept in the Wander | `Pet`, `PetView`, `petName` (the active pet's name, kept in step for reminders) |
 | **Reminder** | The evening nudge on a day not yet checked in | `ReminderPlanner`, `ReminderScheduling` |
-| **Backup** | The journal exported as a file; restoring replaces everything | `JournalCodec`, `exportBackup` |
+| **Backup** | Every context exported as one file (format `tippy-backup` v2); restoring shows a preview, then replaces everything, all or nothing | `BackupFormat`, `BackupModel`, `RestorePreview` |
 | **Onboarding** | The first-launch questions | `hasOnboarded`, `OnboardingView` |
 | **Camp** *(Rewards)* | Home: the pond scene where the active pet lives and decorations are placed | `CampSceneView`, `CampLayout` |
 | **Catalog item**, **slot** *(Rewards)* | A decoration with a stable ID, price and kind (ground, water, light); a spot in the camp of one kind | `CatalogItem`, `CampSlot`, `SlotKind`, `CampCatalog` |

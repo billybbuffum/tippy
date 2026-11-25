@@ -125,6 +125,17 @@ final class RewardsModel {
         lastEarned = nil
     }
 
+    // MARK: Restore
+
+    /// Replaces the ledger wholesale (a restore). Saves first and throws if that
+    /// fails. Nothing restored is news, so no toast.
+    func replace(with ledger: RewardsLedger) throws {
+        try store.save(ledger)
+        self.ledger = ledger
+        lastEarned = nil
+        pendingRecap = nil
+    }
+
     // MARK: Plumbing
 
     private func noteEarned(_ coins: Int) {

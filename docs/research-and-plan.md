@@ -94,7 +94,7 @@ and old history can't be farmed.
 
 ## Implementation plan
 
-Each step is a pull request with its own domain tests, smoke scenarios and seeds, following
+Detailed, agent-ready specs for steps 2–5 and the art are in [`specs/`](./specs/README.md). Each step is a pull request with its own domain tests, smoke scenarios and seeds, following
 [`architecture.md`](./architecture.md).
 
 ### 1. Core loop (PR #3, then aligned with this plan)

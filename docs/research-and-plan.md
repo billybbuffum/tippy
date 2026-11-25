@@ -1,106 +1,192 @@
 # Tippy project plan
 
-**Goal:** Help someone who wants to keep drinking by choice understand which drinking occasions they enjoy, which feel automatic, and what they want to try next. Tippy is a personal iPhone app with an original pixel-art pond and pet companion.
+**Goal:** Help her drink less by caring for a little pond world. Every honest check-in earns coins for decorating
+the camp and steps for her pet's wanders through the pond, reeds and woods, where eggs are waiting to be found,
+hatched and raised. The tracking stays quick and kind. The cuteness is the reason to come back.
 
-**First release:** A free, playable camp-decorating loop from the first session. Log a day, earn camp coins, pick an item, and place it in the pond camp. The first week also includes an optional reflection and a fox visitor. The daily check-in should fit in about 30 seconds when the user skips the optional prompt. A typical weekly review should fit in about two minutes. These are design targets to validate on a real device.
+**First release:** A free, playable loop from the first session:
+- log a day (about 30 seconds, skipping the optional prompt), earn coins and wander steps;
+- decorate the camp;
+- find and hatch a second egg within roughly the first week;
+- see a weekly recap (about two minutes).
 
-## What we learned from Tipple
+These are design targets to check on her phone.
 
-| Evidence | Implication for Tippy |
+Background research on Tipple, reviews and comparable apps is in [`research.md`](./research.md). How the app is
+built is in [`architecture.md`](./architecture.md).
+
+## What we keep from Tipple, and what we fix
+
+| Tipple | Tippy |
 | --- | --- |
-| Tipple's developer describes a user-set weekly budget, daily logging, and coins for hitting a target that can be spent on the fox's campsite. | Keep the weekly goal and the earn → buy → decorate loop. |
-| A captured screen sequence shows a baseline questionnaire, drink logging, optional chat and daily intentions, weekly progress, a prize wheel, and camp upgrades. | Keep the daily actions short and offer reflection after saving. |
-| Some App Store reviewers liked the playful tone. Others reported repetitive questions and finishing the camp within roughly a week. | Give each prompt a purpose and let the app remain useful after the last unlock. |
+| A user-set weekly budget, daily logging, and a fox that reacts to staying on track | Same shape, with an original teal pond creature. The pet reacts gently and is never sad, sick or guilt-tripping |
+| Coins for hitting the target, spent on the fox's campsite | Coins for **every honest check-in**, with bonuses for drink-free days and weeks within the goal. A hard week still earns |
+| A prize wheel and camp upgrades | No randomness and nothing paid. Every reward is earned and visible |
+| Reviewers finished the camp in about a week and then had nothing to do | Three loops that keep going: decorating, **wandering to find eggs**, and **raising a growing collection of pets**. New areas and items can be added over time |
+| The same questions every day | One optional prompt from a rotating set. Answering it adds a wander step, and answers come back in the weekly recap |
 
-The public evidence supports cosmetic progression and a campsite repair setup. It does not establish an ongoing plot, branching quests, or how much content the latest build contains. This review used the [developer site](https://www.moderation.pet/), [App Store listing](https://apps.apple.com/us/app/tipple-alcohol-moderation-pet/id6762130998), [screen walkthrough](https://screensdesign.com/apps/tipple-alcohol-moderation-pet/), and [App Store reviews](https://apps.apple.com/us/app/tipple-alcohol-moderation-pet/id6762130998?see-all=reviews). The current app was not independently played through.
+## The world
 
-## Repository baseline
+**The camp** is home: the pond, the active pet, and the decorations she has placed. It's the Home screen, and
+the camp editor is one tap away.
 
-- [Package.swift](../Package.swift) targets iOS 17+ with SwiftUI and depends on the Foundation-only [TippyModeration package](../Modules/TippyModeration).
-- [ContentView.swift](../Sources/Tippy/ContentView.swift) shows a placeholder pet, weekly summary, a button that logs a beer, and a drink-free action. [TippyApp.swift](../Sources/Tippy/TippyApp.swift) supplies the existing week model. Audit the model and any persisted data before replacing its storage or wiring.
-- The [README](../README.md) documents xtool builds, the macOS CI workflow, simulator GIF smoke tests, signing, and over-the-air installation for registered iPhones. Use that pipeline for the pilot. Confirm device registration, signing and a real install early.
-- Inventory the merged art and open asset work before integrating it. The existing placeholder should provide a fallback until production assets are ready.
+**The Wander** is a trail that leads out from the pond through a series of areas: Pond Shore → Reed Bed →
+Willow Grove → Mossy Woods → Mushroom Glade → Meadow, with more added over time. The active pet walks it one step
+at a time:
+
+| Earns a step | How often |
+| --- | --- |
+| Checking in a day (drinks or drink-free) | Once per date |
+| Answering the day's reflection prompt | Once per date |
+
+Landmarks along the trail hold **eggs** (a few per area), **found decorations** (free items for the camp),
+small **coin pouches**, and the occasional **visitor**. One is an original cinnamon fox who appears at dusk
+after the first weekly recap, as a side story.
+
+**Eggs and pets:**
+- The first egg is given at onboarding and hatches after the first check-in into the teal pond creature.
+- Later eggs are found on the Wander and hatch after a few more check-ins in the camp's nest, wiggling as they
+  get close. The first found egg lands in roughly week one, then about one a week.
+- Hatched pets join the collection: the moth, turtle, seal and fox from the sprite pack, then new species as art
+  arrives. She chooses which pet is out in the camp. The active pet shows the mood poses; the others idle around the pond.
+- Pets grow with friendship hearts earned while they're out (later release).
+
+**Mood** reacts gently to how the week is going: thriving or happy when on pace, "okay" a bit over, a sleepy
+"concerned" further over, and "waiting" when today isn't logged after the reminder time. Weekly numbers are
+written neutrally, separately from the pet.
+
+**No-guilt rules:**
+- Missed days, going over the goal and later edits never take away coins, steps, eggs, pets or decorations.
+- Nothing resets.
+- Returning after a gap gets a welcome and an offer to log today and yesterday.
 
 ## Product flow
 
-| Moment | User experience | Acceptance criteria |
+| Moment | Experience | Acceptance criteria |
 | --- | --- | --- |
-| First launch | Meet and optionally name the pond pet. Choose what to explore, then set an optional weekly drink goal or start in observation mode. Offer a reminder after the first save. | The user can complete a first check-in without a drink goal, reminder permission, or account. |
-| Pond home | See the pet, today's check-in action, the week's recorded total, and the optional goal. Open the camp editor, recent days, or previous reviews. | The UI distinguishes a recorded zero from an unlogged day. A goal of zero is distinct from observation mode. |
-| Log a day | Pick today, yesterday, or an earlier date. Record zero or add one or more drinks. Offer common presets and a custom amount and ABV. | Save and edit both kinds of records, reopen them after relaunch, and show the updated total immediately. The form preserves the user's input if saving fails. |
-| Reflect optionally | After logging, offer one short prompt and a skip action. For example, “Which drink did you most enjoy?” or “What did you want in that moment?” | Saving a drink log is independent of answering the prompt. Drink-free entries can use prompts such as “What did you notice about the evening?” |
-| Review the week | Show recorded totals, explicitly drink-free days, and days with no entry. Resurface the user's own notes. Offer one experiment and the option to keep, change, or remove the next goal. | Partial weeks are marked as partial. The user can save the review and close the app without losing their experiment. |
-| Decorate the camp | Open the shop, choose a decoration, then place or move it on the pond scene. | The first session supports a real choice between affordable items. Purchased items can be stored and placed again for free. |
-| Return after a gap | Welcome the user back, offer today and yesterday, and keep earlier entries available. | Unlogged days do not reset pond progress or trigger guilt-based copy. Reminders are opt-in and use neutral notification text. |
+| First launch | The pet's egg greets her. Name it, give a typical week, choose a weekly goal, and optionally a cost per drink. The reminder is offered after the first save. | A first check-in is possible without reminder permission or an account. Tippy never sets the goal for her; it pre-fills her typical week and she picks. |
+| Camp (Home) | The active pet in the decorated camp, today's check-in action, the week's total against the goal, coins, and the next Wander landmark. | A recorded zero looks different from an unlogged day. |
+| Log a day | Today, yesterday or an earlier date. Record zero, or add drinks from presets with a custom amount and ABV. | Entries can be saved, edited and deleted, survive relaunch, and update totals immediately. Removing the last drink asks whether to mark the day drink-free or clear it. A failed save keeps the form. |
+| Reflect (optional) | After saving, one short prompt with Skip, such as "Which drink did you most enjoy?" or "What helped tonight?" | Saving never depends on answering. Answering adds a Wander step once per date. |
+| Rewards | Coins and a step animate onto the camp after saving. | Each award is earned once per date or week and is never revoked or duplicated by retries or edits. |
+| Decorate | Open the shop, buy an item, place it in a compatible spot. Move, swap or store items. | A real choice between affordable starter items in the first session. Moving and storing are free. |
+| Wander | Open the trail map: areas, the pet's position, landmarks ahead, and what was found. | Steps come only from the rules above. Landmarks are collected once. |
+| Hatch | An egg in the nest counts down in check-ins, then hatches with an animation, and the pet joins the collection. | Hatching survives relaunch. Choosing the active pet is free and instant. |
+| Weekly recap | When a week ends: total against that week's goal, drink-free days, coins (including the goal bonus), steps and finds, her reflection answers, and an optional "one thing to try next week". | Shown once for the latest finished week; older recaps live in history. Partial weeks are labelled. A goal change applies from the current week on and never rewrites past weeks. |
+| Return after a gap | A welcome, today and yesterday offered, nothing lost. | No queue of missed recaps. Reminders are opt-in with neutral text. |
 
-Example experiment: “At Friday dinner, I’ll order the drink I actually want and decide about a second one after I finish eating.” Keep experiments user-authored or user-selected. The app should record what the user noticed without claiming that sparse data proves a pattern.
+## Economy (first release)
 
-## Pond progression and story
-
-The core loop is **check in → earn camp coins → pick a decoration → make the camp your own**. The full loop is free, with no subscription, paid currency, or paywall. The camp is visible on Home and the editor is one tap away.
-
-| Feature | First-release behavior |
+| Earn | Coins |
 | --- | --- |
-| Earn | One coin award per recorded date, regardless of drink count or goal. The first award covers a starter item and each subsequent check-in earns toward another choice. Reflection and numeric goals remain optional. |
-| Shop | Start with at least eight original items across lighting, plants and furnishings. Offer at least three equally affordable starter items, such as a lantern, a lily planter and a bench. Price the rest across multiple check-ins and verify that a player can add several items in week one with choices still available in week two. |
-| Decorate | Preview an item, choose an open compatible spot, and confirm placement. Use tap-to-select placement so drag gestures are optional. Allow moving, swapping compatible items, and storing decorations. Show owned and placed items. |
-| Come back | Animate selected scenery with subtle ripples, swaying reeds and twinkles. The first weekly review can introduce an original fox visitor as a side story. Decorating works from day one, including in observation mode. |
+| Check in a date (any amount) | 5 |
+| Drink-free day bonus | +3 |
+| Week within its goal (at recap) | +15 |
+| Coin pouch on the Wander | 5–10 |
 
-Progress is cumulative across weeks. Edits, missed days and going over a goal do not remove coins or decorations. Use original pixel art, layouts and dialogue. Respect Reduce Motion with still poses or brief fades. Add more decorations and visitors after the pilot based on what the user enjoys placing.
+Starter items cost 10–15, so the first check-ins already buy a real choice between three. Most items cost
+20–60, and showpieces 80–150. The first catalog has at least 12 items across lighting, plants, furnishings and
+pond details, starting from the sprite pack (lantern, mushroom, seashell, sprout, watering can) plus new art.
+Week two must still have things to want.
+
+Back-filled dates earn the same as same-day check-ins, for up to 7 days back, so a forgotten day isn't punished
+and old history can't be farmed.
 
 ## Implementation plan
 
-### 1. Store reliable check-ins
+Each step is a pull request with its own domain tests, smoke scenarios and seeds, following
+[`architecture.md`](./architecture.md).
 
-- Introduce a versioned local store, with SwiftData as the proposed persistence layer. Keep date, drink conversion and weekly aggregation logic in `TippyModeration`. Keep view state and persistence adapters under `Sources/Tippy`.
-- Model a day with a stable local calendar date, an explicit record state (zero drinks or one or more drinks), optional reflection, and timestamps. Absence of a day record represents missing data. Each drink has a stable ID and stores the input amount, volume unit, ABV and any explicit standard-drink override. Reuse the current domain conversion and aggregate before display rounding.
-- Define the pilot's weeks as Monday–Sunday in the user's calendar time zone. Keep recorded date keys stable while traveling. Snapshot weekly goals so changes apply going forward. Totals may update after backfill; past targets and earned milestones remain stable. Derive weekly totals from records instead of persisting a second count.
-- Save edits atomically. Adding a drink to a zero day changes its record state. Removing the last drink requires an explicit choice to mark the day drink-free or clear the entry. Ensure repeat taps, retries and relaunches cannot create duplicate check-ins or milestones. Preserve existing records during migration if the baseline has durable user data.
+### 1. Core loop (PR #3, then aligned with this plan)
 
-**Exit check:** Zero, multiple drinks, corrections and backfill survive a relaunch. The UI handles a missing record, partial week, goal of zero and observation mode distinctly.
+Already in PR #3:
+- the Journal domain (drinks, drink-free days, weeks, mood);
+- logging and back-filling;
+- history;
+- settings;
+- reminders;
+- JSON backup;
+- onboarding.
 
-### 2. Close the daily loop
+To align before it merges, so the stored format starts right:
+- **Edits:** edit drinks; removing the last drink asks "drink-free or clear?".
+- **Drink entries:** store the amount and unit as entered, plus an optional standard-drink override.
+- **Weekly goal:** each week keeps the goal it started with; changes apply from the current week on.
+- **Reflection:** the optional prompt after saving, with the answer stored per date.
+- **Onboarding:** pre-fill the goal with her typical week (no automatic cut), cost optional, reminder offered
+  after the first save.
+- **The pet:** use the sprite pack's mood poses for the teal pet (pixel-perfect scaling, idle animation) instead
+  of the drawn placeholder.
+- **Reduce Motion:** still poses.
 
-- Replace the placeholder one-tap beer action with presets and custom entry. Add a history view for date selection and editing.
-- Add brief first-launch setup and a settings path for editing the current intention and next week's goal. Present the optional reflection after save and draw prompts from a small, locally bundled set.
-- Add local reminders only after opt-in. Reconcile scheduling when the app becomes active and when preferences, calendar conditions or the current day's entry change. Check how permission denial and already-delivered reminders behave.
+**Exit check:** zero days, multiple drinks, edits and back-fill survive relaunch. The pet shows the right sprite
+for each mood.
 
-**Exit check:** A fresh user can record a day using VoiceOver, skip reflection, edit the entry from history, and understand their weekly total. The pilot timing target is met for a routine check-in.
+### 2. Rewards: coins and the weekly recap (new `TippyRewards` context)
 
-### 3. Build the shop and camp editor
+- An award ledger keyed by fact (`checkIn:<date>`, `drinkFree:<date>`, `weekGoal:<week>`, `pouch:<landmark>`), so
+  an award is recorded once and never revoked. The balance is earned minus spent.
+- The weekly recap screen, shown once per finished week, with the goal bonus awarded there.
 
-- Store a coin ledger keyed by recorded date and purchase ID. Apply the first save and earning event in one transaction. Apply the debit and ownership change in one transaction, checking available balance and ownership at commit time. Derive the balance from the ledger.
-- Bundle a catalog with stable item IDs, prices, art anchors and compatible slots. Keep ownership separate from placement. Save layout edits atomically, reject incompatible placements, and keep owned items available even when the selected spot is occupied.
-- Use deterministic simulator seeds for a fresh camp and a furnished camp. Verify the original sprites, optional animation and icon in the existing xtool build.
+**Exit check:** retries, edits and relaunches never duplicate or remove coins. A seeded finished week shows its
+recap.
 
-**Exit check:** A fresh user can log a day, afford a choice, buy an item, place it, and see it after relaunch. Buying twice cannot duplicate a debit, corrections cannot duplicate earnings, and moving or storing items costs nothing.
+### 3. Camp: shop and decorating
 
-### 4. Deliver the weekly review
+- A bundled catalog with stable item IDs, prices, art and compatible slots. Ownership is kept separate from placement.
+- Buying checks the balance and records the purchase in one atomic change. Placement uses tap-to-select spots,
+  with move, swap and store.
+- Seeds for a fresh camp and a furnished camp.
 
-- Use a stable week identifier for the review, with the user's note, chosen experiment and any next-week goal. Save one review per week and allow editing it.
-- Show the most recently completed week on return. Make previous reviews accessible through history. Avoid queues of prompts when a user comes back after a long break.
-- Show each day's state in a short summary. Label partial data and resurface notes directly. Preview the week in simulator seeds so the review is testable without waiting seven days.
+**Exit check:** log, afford, buy, place, relaunch, still there. Buying twice can't double-charge.
 
-**Exit check:** A partially logged week can be reviewed, an experiment appears for the intended follow-up week, and the next goal cannot change historical comparisons.
+### 4. The Wander and pets (new `TippyWander` context)
 
-### 5. Pilot and release
+- A step ledger keyed by fact (`checkIn:<date>`, `reflection:<date>`). The trail is bundled data (areas,
+  landmarks, contents). The pet's position is derived from total steps.
+- Eggs: found, nesting with a check-in countdown, hatched. The pet collection and choosing the active pet.
+- Trail map screen, hatching animation, and the fox visitor after the first recap.
 
-- Install on a registered iPhone via the documented signing and Pages workflow. Confirm that upgrading over the prior signed build preserves records.
-- Before a multiweek pilot, add versioned JSON export and a validated restore flow. Back up the coin ledger, ownership and layout along with the logs and reviews. Preview what will be restored, handle duplicate IDs explicitly, and apply imports atomically. Explain that exports contain private notes.
-- Run a voluntary two-week pilot. Ask whether the daily log was easy, whether the review surfaced something the user wanted to remember, and whether decorating gave the user a reason to return. Use direct feedback and optional notes, with no telemetry or automatic sharing.
-- Prioritize changes based on feedback. Consider extra visitors, widgets, Apple Health, syncing, richer trends or revised prompts only after the core loop is useful.
+**Exit check:** the same steps always reach the same landmarks, an egg found in week one hatches on schedule,
+and nothing found is lost on relaunch.
 
-**Exit check:** The pilot user can install, update, restore a backup and complete a first week on the phone. Capture feedback without committing any personal records to GitHub.
+### 5. Backup, polish and pilot
+
+- Back up every context (journal, ledgers, purchases, layout, pets) in one versioned file. Restore shows a
+  preview of what will change, applies atomically, and warns that exports contain private notes.
+- Run a two-week pilot on both phones. Questions: was logging easy, did the pets and decorating make her want to
+  come back, and did anything feel like nagging? Feedback is direct; no telemetry.
+
+**Exit check:** install, update over the last build, restore a backup, and complete two weeks.
+
+## Art needed
+
+The sprite pack covers the teal pet's moods, idle and hop animations, the egg wiggle, four alternate pets, a coin,
+five camp props and four drinks. Still to make (original art; Reduce Motion gets still frames):
+- **Camp:** the pond background, with placement spots marked, plus about 7 more decorations to reach 12.
+- **Wander:** a background or tileset for each of the six areas, path markers, landmark icons, and a nest.
+- **Pets:** eggs patterned for each species, a hatching animation, and mood poses for the alternate pets (they
+  have happy and thriving now; okay, concerned and waiting are still to come).
+- **The fox visitor:** a dusk pose and a short dialogue bubble.
 
 ## Verification and release gates
 
-| Area | Required checks |
+| Area | Checks |
 | --- | --- |
-| Domain | Standard-drink conversion and rounding; local day/week boundaries across DST, year rollover and travel; observation mode and zero goal; missing vs. zero; backfill and edits; once-only rewards, atomic purchases, insufficient funds and placement conflicts. |
-| UI | Existing smoke coverage plus scenarios for first launch, zero and drink entry, editing an earlier day, first purchase, placement and repositioning, a partial weekly review, and the first fox visit. Follow the README's smoke-scenario rule for source changes. |
-| Device | Signed install and update, reminder permission and delivery, persistence after termination, backup and restore, Dynamic Type, VoiceOver, Reduce Motion, and acceptable sprite animation performance. |
-| Privacy | Keep logs and reflections on-device with no account or analytics in the pilot. Use synthetic values in fixtures, CI GIFs, issues and screenshots. Remain within the existing app's non-clinical scope and do not provide automated drinking targets or taper schedules. |
+| Domain | Standard-drink maths; day and week boundaries across DST, year rollover and travel; missing vs zero; back-fill limits; edits; weekly goal kept per week; once-only awards and steps; atomic purchases; insufficient funds; placement conflicts; egg countdowns. |
+| UI | Smoke scenarios for: onboarding, a zero day, a drink day, editing, reflection, first purchase and placement, the Wander map, a hatch, and a weekly recap. Seeds for each. |
+| Device | Signed install and update keep data; reminder permission and delivery; backup and restore; Dynamic Type, VoiceOver, Reduce Motion; smooth sprite animation. |
+| Privacy and safety | Everything stays on the phone, with no account or analytics. Fixtures and GIFs use made-up data. The not-medical-advice note and helpline stay in Settings. No automatic drinking targets or taper schedules. |
 
-**Suggested PR order:** Local storage and domain rules → daily logging and onboarding → camp shop and editor → weekly review and fox visit → backup and release polish. Each PR should include its own verification, so art and signed-device setup can proceed while the data model is developed.
+## Decisions
 
-**Decisions to revisit after the pilot:** Whether Monday is the best review boundary, whether users want the numeric goal visible on the pond, and which decorations, layouts or visitors would make them more likely to return.
+Settled:
+- **Storage** is one versioned JSON file per context, not SwiftData. It meets every requirement here (atomic,
+  versioned, migratable), and the backup format is the stored format.
+- **Weeks** run Monday to Sunday by default, with a setting to change it.
+
+To revisit after the pilot:
+- the coin amounts and prices;
+- how often eggs turn up;
+- whether a "no goal yet" mode is wanted;
+- whether to show money saved on the camp screen.

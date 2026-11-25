@@ -154,7 +154,7 @@ goes here, with a unit test.
 |---|---|---|---|
 | **Moderation** | `TippyModeration` | The journal: drink entries, drink-free days, reflections, the weekly goal per week, settings, week summaries, pet mood, reminder plan | Built |
 | **Rewards** | `TippyRewards` | The coin ledger, the shop catalog, purchases, decorations placed in the camp, weekly recaps | Built (coins, recaps, shop, camp) |
-| **Wander** | `TippyWander` | The step ledger, the trail (areas, landmarks, finds), eggs, hatching, the pet collection, the active pet | Part 1 built (spec 03a); the collection screen, the visitor and finds into Rewards are next |
+| **Wander** | `TippyWander` | The step ledger, the trail (areas, landmarks, finds), eggs, hatching, the pet collection, the active pet | Built (trail, nest, hatching, the pet collection, the visitor) |
 
 Rules between contexts:
 - **Downstream contexts read upstream facts through public API only.** Rewards and Wander depend on Moderation
@@ -312,4 +312,6 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Hatch** *(Wander)* | The nested egg becomes a pet once enough check-ins pass (the starter after 1, others after 3); she names it in the hatch moment | `hatchAfterCheckIns`, `pendingHatch`, `HatchView` |
 | **Species** *(Wander)* | The kind of pet: pondling, lilac moth, leaf-shell turtle, spotted seal, cinnamon fox | `Species` |
 | **Collection**, **active pet** *(Wander)* | Every hatched pet; the one out in the camp, shown on Home | `pets`, `activePetID`, `setActive` |
-| **Visitor** *(Wander)* | A one-time guest found on the trail (the fox at dusk), seen once | `LandmarkContent.visitor`, `markVisitorSeen` |
+| **Visitor** *(Wander)* | A one-time guest found on the trail (the fox at dusk), seen once | `LandmarkContent.visitor`, `markVisitorSeen`, `VisitorView` |
+| **Pets** (the collection) *(Wander)* | Every hatched pet, the egg in the nest and the basket; choosing one sends it out into the camp | `PetsView`, `setActive` |
+| **App coordinator** | The app-layer wiring between contexts: syncs Rewards and the Wander on every journal change and replays Wander finds into Rewards grants and awards | `AppCoordinator` |

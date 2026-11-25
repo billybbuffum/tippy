@@ -65,6 +65,14 @@ final class WanderModel {
 
     func isFound(_ landmark: Landmark) -> Bool { state.found[landmark.id] != nil }
 
+    /// The first visitor found and not yet met, by visitor ID ("fox-at-dusk").
+    var unseenVisitorID: String? {
+        for landmark in state.unseenVisitors {
+            if case .visitor(let id) = landmark.content { return id }
+        }
+        return nil
+    }
+
     // MARK: Commands
 
     /// Catches up with the journal (the journal change hook calls this).

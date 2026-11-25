@@ -26,10 +26,7 @@ struct TippyApp: App {
         )
         let rewardsModel = RewardsModel(store: FileRewardsStore.standard(), clock: { Date() })
         let wanderModel = WanderModel(store: FileWanderStore.standard(), starterPetName: journalModel.settings.petName)
-        journalModel.onJournalChange { journal, today in
-            rewardsModel.sync(journal: journal, today: today)
-            _ = wanderModel.sync(journal: journal, today: today)
-        }
+        AppCoordinator.wire(journal: journalModel, rewards: rewardsModel, wander: wanderModel)
         return AppModels(journal: journalModel, rewards: rewardsModel, wander: wanderModel)
     }
 }

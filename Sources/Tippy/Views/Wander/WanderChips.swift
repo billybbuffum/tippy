@@ -1,8 +1,9 @@
 import SwiftUI
 import TippyWander
 
-/// Home's Wander chips, under the pet's name: how far the next landmark is
-/// ("4 steps to the Reed Bed") and the Wander button. Both open the map.
+/// Home's Wander chips, under the camp: how far the next landmark is
+/// ("4 steps to the Reed Bed") and the Wander button, which both open the map,
+/// and the Pets button.
 /// They sit high on Home, clear of the bottom action bar.
 struct WanderChips: View {
     @Environment(WanderModel.self) private var wander
@@ -26,6 +27,17 @@ struct WanderChips: View {
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.capsule)
             .accessibilityIdentifier("wander-button")
+            NavigationLink {
+                PetsView()
+            } label: {
+                Label("Pets", systemImage: "pawprint.fill")
+                    .labelStyle(.iconOnly)
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .accessibilityLabel("Pets")
+            .accessibilityIdentifier("pets-button")
         }
     }
 }

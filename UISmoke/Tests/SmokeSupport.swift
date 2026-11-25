@@ -42,6 +42,10 @@ class SmokeScenario: XCTestCase {
         /// Nov 11-18 logged, one reflection: 9 steps on the Wander, the
         /// pondling out, the moth egg nested one check-in from hatching.
         case wanderMid = "wander-mid"
+        /// `wander-mid` with the moth hatched (Dot); the pondling out; nest empty.
+        case twoPets = "two-pets"
+        /// `two-pets` plus the fox at dusk found and not met yet.
+        case foxVisit = "fox-visit"
     }
 
     var app: XCUIApplication!
@@ -203,6 +207,15 @@ class SmokeScenario: XCTestCase {
         } else {
             app.buttons[title].firstMatch.tap()
         }
+    }
+
+    /// Replaces whatever a text field holds with `text`.
+    func replaceText(_ text: String, in field: XCUIElement) {
+        field.tap()
+        if let current = field.value as? String, !current.isEmpty {
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2))
+        }
+        field.typeText(text)
     }
 
     func pause() {

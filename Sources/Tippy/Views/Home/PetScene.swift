@@ -3,7 +3,7 @@ import TippyModeration
 import TippyRewards
 import TippyWander
 
-/// Home's scene: the pet's name and a caption, then the pond camp with her
+/// Home's scene: the pet's name and a caption, the Wander chips, then the pond camp with her
 /// decorations, the active pet at its spot and the nest at its spot while an
 /// egg is nested. Before the starter hatches (and until a new pet's hatch
 /// moment plays) the egg in its nest stands at the pet's spot instead.
@@ -14,6 +14,7 @@ struct PetScene: View {
     /// An item waiting for a spot ("Place it now", or "Move to another spot").
     @Binding var placingItem: String?
     let openShop: () -> Void
+    let openWander: () -> Void
 
     @Environment(JournalModel.self) private var model
     @Environment(RewardsModel.self) private var rewards
@@ -32,6 +33,9 @@ struct PetScene: View {
                     .multilineTextAlignment(.center)
                     .accessibilityIdentifier("pet-mood-label")
             }
+            // Above the tall scene, so they stay clear of the bottom action bar
+            // even with one-time cards showing at the top of Home.
+            WanderChips(open: openWander)
             CampSceneView(
                 isDusk: isDusk,
                 decorating: decorating,

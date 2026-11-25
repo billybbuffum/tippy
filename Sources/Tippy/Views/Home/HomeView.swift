@@ -33,8 +33,12 @@ struct HomeView: View {
                     if model.shouldOfferReminder {
                         ReminderOfferCard()
                     }
-                    PetScene(decorating: $decorating, placingItem: $placingItem) { showingShop = true }
-                    WanderChips { showingWander = true }
+                    PetScene(
+                        decorating: $decorating,
+                        placingItem: $placingItem,
+                        openShop: { showingShop = true },
+                        openWander: { showingWander = true }
+                    )
                     NextWeekIdeaCard()
                     WeekCard(summary: model.summary)
                     todayCard

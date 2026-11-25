@@ -4,6 +4,7 @@ import TippyWander
 
 struct HomeView: View {
     @Environment(JournalModel.self) private var model
+    @Environment(RewardsModel.self) private var rewards
     @Environment(WanderModel.self) private var wander
     @State private var showingLog = false
     @State private var showingSettings = false
@@ -30,6 +31,7 @@ struct HomeView: View {
                         // without scrolling, clear of the bottom action bar.
                         ReminderOfferCard()
                     }
+                    NextWeekIdeaCard()
                     WeekCard(summary: model.summary)
                     todayCard
                 }
@@ -40,6 +42,7 @@ struct HomeView: View {
                 presentHatch()
             }
             .onDisappear { front.isFront = false }
+            .modifier(RewardsPresentation(otherSheetShowing: showingLog || showingSettings || reflecting != nil || hatching != nil || wander.state.pendingHatch != nil))
             .safeAreaInset(edge: .bottom) { actions }
             .navigationTitle("Tippy")
             .navigationBarTitleDisplayMode(.inline)
@@ -52,6 +55,9 @@ struct HomeView: View {
                     }
                     .accessibilityLabel("History")
                     .accessibilityIdentifier("history-button")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    CoinBadge(balance: rewards.balance)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {

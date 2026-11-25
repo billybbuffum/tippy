@@ -22,6 +22,8 @@ let package = Package(
         // The Moderation context (standard drinks, weekly pace, the pet's
         // mood) is its own package: Foundation-only domain, tested on a Mac.
         .package(path: "Modules/TippyModeration"),
+        // The Rewards context (coins, weekly recaps), downstream of Moderation.
+        .package(path: "Modules/TippyRewards"),
         // The Wander context (steps, the trail, eggs, hatching, pets).
         .package(path: "Modules/TippyWander"),
     ],
@@ -30,6 +32,7 @@ let package = Package(
             name: "Tippy",
             dependencies: [
                 .product(name: "TippyModeration", package: "TippyModeration"),
+                .product(name: "TippyRewards", package: "TippyRewards"),
                 .product(name: "TippyWander", package: "TippyWander"),
             ],
             // The sprites the app shows, copied from Assets/Sprites by

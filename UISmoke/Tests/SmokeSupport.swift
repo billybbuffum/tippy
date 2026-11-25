@@ -28,6 +28,12 @@ class SmokeScenario: XCTestCase {
         case midWeek = "mid-week"
         /// One beer logged today, nothing else; the reminder already offered.
         case oneDrink = "one-drink"
+        /// Last week (Nov 9–15) logged on 6 of 7 days, 10 drinks against 14, one
+        /// reflection; its check-in coins (33) already earned, the goal bonus not
+        /// yet; its recap not seen. This week empty.
+        case lastWeekDone = "last-week-done"
+        /// `default` plus 120 coins.
+        case coins
         /// Onboarded, nothing logged, the starter egg in the nest (every
         /// other seed has hatched the pondling already).
         case eggReady = "egg-ready"

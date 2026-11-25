@@ -45,6 +45,7 @@ struct SpriteAnimation: Equatable {
     static let petIdle = SpriteAnimation(strip: "pet-idle", durations: [0.48, 0.16, 0.25, 0.16])
     static let petHop = SpriteAnimation(strip: "pet-hop", durations: [0.48, 0.10, 0.16, 0.11])
     static let eggWiggle = SpriteAnimation(strip: "egg-wiggle", durations: [0.65, 0.14, 0.14, 0.17])
+    static let coinShimmer = SpriteAnimation(strip: "coin-shimmer", durations: [0.25, 0.10, 0.12, 0.10])
     /// Played once: frames 1-5 crack and burst, frame 6 is the empty shell.
     static let hatch = SpriteAnimation(strip: "hatch", durations: [0.30, 0.12, 0.12, 0.12, 0.20, 0.40])
     /// Played once under the pet as it lands on the trail.

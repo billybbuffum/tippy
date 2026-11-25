@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(JournalModel.self) private var model
+    @Environment(RewardsModel.self) private var rewards
     @Environment(WanderModel.self) private var wander
     @Environment(\.scenePhase) private var scenePhase
 
@@ -19,18 +20,19 @@ struct RootView: View {
         .alert("Tippy", isPresented: messageShown) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(model.message ?? wander.message ?? "")
+            Text(model.message ?? rewards.message ?? wander.message ?? "")
         }
     }
 
     /// One alert for either model's message (the journal's first).
     private var messageShown: Binding<Bool> {
         Binding(
-            get: { model.message != nil || wander.message != nil },
+            get: { model.message != nil || rewards.message != nil || wander.message != nil },
             set: {
-                if !$0 {
-                    if model.message != nil { model.message = nil } else { wander.message = nil }
-                }
+                guard !$0 else { return }
+                if model.message != nil { model.message = nil }
+                else if rewards.message != nil { rewards.message = nil }
+                else { wander.message = nil }
             }
         )
     }

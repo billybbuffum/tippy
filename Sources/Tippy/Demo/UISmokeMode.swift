@@ -1,5 +1,6 @@
 import Foundation
 import TippyModeration
+import TippyRewards
 import TippyWander
 
 /// Demo mode for the simulator UI smoke scenarios (`.github/workflows/ui-smoke.yml`,
@@ -36,6 +37,13 @@ enum UISmokeMode {
         case midWeek = "mid-week"
         /// One beer logged today, nothing else; the reminder already offered.
         case oneDrink = "one-drink"
+        /// Last week (Nov 9–15) logged on 6 of 7 days, 10 drinks against a goal of 14,
+        /// Wednesday drink-free with a reflection. The ledger already holds those days'
+        /// check-in and drink-free awards (as if synced live), not the week-goal bonus.
+        /// The recap not seen yet; this week empty; the reminder already offered.
+        case lastWeekDone = "last-week-done"
+        /// The `default` seed plus 120 coins (synthetic awards). Spec 02 uses it.
+        case coins
         /// Onboarded, nothing logged, and no Wander saved yet, so the
         /// starter egg is in the nest (every other seed has hatched it).
         case eggReady = "egg-ready"
@@ -82,12 +90,16 @@ enum UISmokeMode {
             calendar: calendar,
             clock: { UISmokeMode.now }
         )
+        let rewardsModel = RewardsModel(store: InMemoryRewardsStore(ledger(for: seed)), clock: { UISmokeMode.now })
         let wanderModel = WanderModel(
             store: InMemoryWanderStore(wander(for: seed, journal: journalModel.journal)),
             starterPetName: journalModel.settings.petName
         )
-        journalModel.onJournalChange { journal, today in _ = wanderModel.sync(journal: journal, today: today) }
-        return AppModels(journal: journalModel, wander: wanderModel)
+        journalModel.onJournalChange { journal, today in
+            rewardsModel.sync(journal: journal, today: today)
+            _ = wanderModel.sync(journal: journal, today: today)
+        }
+        return AppModels(journal: journalModel, rewards: rewardsModel, wander: wanderModel)
     }
 
     static func journal(for seed: Seed) -> Journal? {
@@ -102,7 +114,7 @@ enum UISmokeMode {
         switch seed {
         case .onboarding:
             return nil
-        case .default:
+        case .default, .coins:
             journal = Journal(settings: settings)
         case .midWeek:
             let monday = today.adding(days: -3)
@@ -121,6 +133,22 @@ enum UISmokeMode {
         case .oneDrink:
             settings.reminderOffered = true
             journal = Journal(settings: settings, entries: [beer(on: today, number: 0)])
+        case .lastWeekDone:
+            settings.reminderOffered = true
+            let lastWeek = Week(containing: today, firstWeekday: settings.firstWeekday).previous
+            let wednesday = lastWeek.start.adding(days: 2)
+            // Two beers each Monday, Tuesday, Thursday, Friday and Saturday; Sunday not logged.
+            let entries = [0, 1, 3, 4, 5].flatMap { offset in
+                (0..<2).map { beer(on: lastWeek.start.adding(days: offset), number: $0) }
+            }
+            let reflection = Reflection(
+                day: wednesday,
+                promptID: ReflectionPrompts.prompt(for: wednesday, hadDrinks: false).id,
+                answer: "Cooked dinner with friends instead.",
+                answeredAt: wednesday.startDate(in: calendar).addingTimeInterval(21 * 3600)
+            )
+            journal = Journal(settings: settings, entries: entries, drinkFreeDays: [wednesday], reflections: [reflection])
+            journal.setWeeklyGoal(14, from: lastWeek)
         case .eggReady:
             journal = Journal(settings: settings)
         case .wanderMid:
@@ -152,6 +180,38 @@ enum UISmokeMode {
         return journal
     }
 
+    /// The rewards ledger a seed starts with; nil (nothing saved) for most.
+    static func ledger(for seed: Seed) -> RewardsLedger? {
+        switch seed {
+        case .default, .onboarding, .midWeek, .oneDrink, .eggReady:
+            return nil
+        case .wanderMid:
+            // This is an established journal, so last week's recap was seen.
+            guard let seeded = journal(for: seed) else { return nil }
+            let today = LocalDate(now, calendar: calendar)
+            var ledger = RewardsLedger(awards: AwardPolicy.eligibleAwards(journal: seeded, today: today))
+            ledger.markRecapSeen(seeded.week(containing: today).previous, at: now, nextWeekIdea: nil)
+            return ledger
+        case .coins:
+            // Six synthetic pouches of 20: 120 coins with no journal behind them.
+            let awards = (1...6).compactMap { number in
+                Award(key: .pouch("demo-\(number)"), coins: 20, earnedOn: LocalDate(year: 2026, month: 10, day: number)!)
+            }
+            return RewardsLedger(awards: awards)
+        case .lastWeekDone:
+            // As if the app had synced on each day of last week as she logged it:
+            // every check-in and drink-free award, but not the week's goal bonus,
+            // which only becomes due once the week is over.
+            guard let seeded = journal(for: seed) else { return nil }
+            let lastWeek = seeded.week(containing: LocalDate(now, calendar: calendar)).previous
+            var ledger = RewardsLedger()
+            for day in lastWeek.days {
+                for award in AwardPolicy.eligibleAwards(journal: seeded, today: day) { ledger.record(award) }
+            }
+            return ledger
+        }
+    }
+
     /// The Wander each seed starts with. Nil (nothing saved) gives the
     /// starter egg. The other seeds have already hatched the pondling and
     /// caught up with their journal, as if she'd been using the Wander, so
@@ -161,7 +221,7 @@ enum UISmokeMode {
         switch seed {
         case .onboarding, .eggReady:
             return nil
-        case .default, .midWeek, .oneDrink:
+        case .default, .midWeek, .oneDrink, .lastWeekDone, .coins:
             let pondling = Pet(
                 id: WanderState.starterEggID,
                 speciesID: Species.pondling.id,

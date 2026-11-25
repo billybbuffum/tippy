@@ -34,6 +34,9 @@ MANIFEST = [
     "Drinks/beer.png",
     "Drinks/wine.png",
     "Drinks/cocktail.png",
+    # Rewards: the coin (256 x 256) and its four-frame shimmer.
+    "Rewards/coin.png",
+    "Animations/coin-shimmer.png",
     # The Wander (spec 03): the other species' mood poses and eggs, their
     # idle, delight and egg-wiggle strips, the hatch, the trail map's
     # banners, stones, find icons and effects, and the nest.

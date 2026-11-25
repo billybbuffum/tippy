@@ -7,10 +7,12 @@ import Foundation
 @MainActor
 final class AppModels {
     let journal: JournalModel
+    let rewards: RewardsModel
     let wander: WanderModel
 
-    init(journal: JournalModel, wander: WanderModel) {
+    init(journal: JournalModel, rewards: RewardsModel, wander: WanderModel) {
         self.journal = journal
+        self.rewards = rewards
         self.wander = wander
     }
 }

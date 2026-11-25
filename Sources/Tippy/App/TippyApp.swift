@@ -9,6 +9,7 @@ struct TippyApp: App {
             RootView()
         }
         .environment(models.journal)
+        .environment(models.rewards)
         .environment(models.wander)
     }
 
@@ -23,8 +24,12 @@ struct TippyApp: App {
             calendar: .autoupdatingCurrent,
             clock: { Date() }
         )
+        let rewardsModel = RewardsModel(store: FileRewardsStore.standard(), clock: { Date() })
         let wanderModel = WanderModel(store: FileWanderStore.standard(), starterPetName: journalModel.settings.petName)
-        journalModel.onJournalChange { journal, today in _ = wanderModel.sync(journal: journal, today: today) }
-        return AppModels(journal: journalModel, wander: wanderModel)
+        journalModel.onJournalChange { journal, today in
+            rewardsModel.sync(journal: journal, today: today)
+            _ = wanderModel.sync(journal: journal, today: today)
+        }
+        return AppModels(journal: journalModel, rewards: rewardsModel, wander: wanderModel)
     }
 }

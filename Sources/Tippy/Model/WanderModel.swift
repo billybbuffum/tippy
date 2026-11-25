@@ -65,6 +65,14 @@ final class WanderModel {
 
     func isFound(_ landmark: Landmark) -> Bool { state.found[landmark.id] != nil }
 
+    /// The first visitor found and not yet met, by visitor ID ("fox-at-dusk").
+    var unseenVisitorID: String? {
+        for landmark in state.unseenVisitors {
+            if case .visitor(let id) = landmark.content { return id }
+        }
+        return nil
+    }
+
     // MARK: Commands
 
     /// Catches up with the journal (the journal change hook calls this).
@@ -97,6 +105,17 @@ final class WanderModel {
     /// The find card for this landmark has been shown (on Home or the map).
     func announceFind(_ landmarkID: String) {
         unannouncedFinds.removeAll { $0.id == landmarkID }
+    }
+
+    // MARK: Restore
+
+    /// Replaces the Wander wholesale (a restore). Saves first and throws if that
+    /// fails. Nothing restored is news, so no find cards or replays.
+    func replace(with state: WanderState) throws {
+        try store.save(state)
+        self.state = state
+        lastEvents = WanderEvents()
+        unannouncedFinds = []
     }
 
     // MARK: Plumbing

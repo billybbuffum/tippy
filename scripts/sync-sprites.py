@@ -44,6 +44,7 @@ MANIFEST = [
       for pose in ("thriving", "happy", "okay", "concerned", "waiting", "egg")],
     *[f"Animations/{pet}-{loop}.png" for pet in ("moth", "turtle", "seal", "fox")
       for loop in ("idle", "delight", "egg-wiggle")],
+    "Pet/fox-dusk.png",
     "Animations/hatch.png",
     "Animations/dust-puff.png",
     "Animations/sparkle.png",

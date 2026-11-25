@@ -9,10 +9,12 @@ final class AppModels {
     let journal: JournalModel
     let rewards: RewardsModel
     let wander: WanderModel
+    let backup: BackupModel
 
     init(journal: JournalModel, rewards: RewardsModel, wander: WanderModel) {
         self.journal = journal
         self.rewards = rewards
         self.wander = wander
+        self.backup = BackupModel(journal: journal, rewards: rewards, wander: wander)
     }
 }

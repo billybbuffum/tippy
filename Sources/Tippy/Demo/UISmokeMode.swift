@@ -1,5 +1,6 @@
 import Foundation
 import TippyModeration
+import TippyBackup
 import TippyRewards
 import TippyWander
 
@@ -53,6 +54,11 @@ enum UISmokeMode {
         /// Nov 11-18 logged with one reflection: 9 steps on the Wander, the
         /// pondling out, the moth egg found and one check-in from hatching.
         case wanderMid = "wander-mid"
+        /// `wander-mid`, but the moth has hatched (named Dot) and the nest is empty;
+        /// the pondling is still out (spec 03b).
+        case twoPets = "two-pets"
+        /// `two-pets` one step further: the fox at dusk found on the trail and not met yet.
+        case foxVisit = "fox-visit"
     }
 
     /// The seed this launch asked for; `default` when none was named. An
@@ -98,10 +104,10 @@ enum UISmokeMode {
             store: InMemoryWanderStore(wander(for: seed, journal: journalModel.journal)),
             starterPetName: journalModel.settings.petName
         )
-        journalModel.onJournalChange { journal, today in
-            rewardsModel.sync(journal: journal, today: today)
-            _ = wanderModel.sync(journal: journal, today: today)
-        }
+        AppCoordinator.wire(journal: journalModel, rewards: rewardsModel, wander: wanderModel)
+        // Seeds are "as if she'd been using the app": anything the first sync
+        // earns from finds already made (a pouch on the trail) isn't news, so no toast.
+        rewardsModel.acknowledgeEarned()
         return AppModels(journal: journalModel, rewards: rewardsModel, wander: wanderModel)
     }
 
@@ -154,7 +160,7 @@ enum UISmokeMode {
             journal.setWeeklyGoal(14, from: lastWeek)
         case .eggReady:
             journal = Journal(settings: settings)
-        case .wanderMid:
+        case .wanderMid, .twoPets, .foxVisit:
             // Nov 11-18: drink-free days, two beers on alternate days, and
             // one reflection on Sunday the 15th.
             settings.reminderOffered = true
@@ -183,12 +189,33 @@ enum UISmokeMode {
         return journal
     }
 
+    /// A synthetic backup for the restore scenarios (the system file picker can't
+    /// be driven from XCUITest): the `two-pets` journal and Wander with Dot out in
+    /// the camp, and the `furnished-camp` coins and decorations.
+    static func demoBackup() -> Data? {
+        guard let journal = journal(for: .twoPets) else { return nil }
+        var wander = wander(for: .twoPets, journal: journal)
+        _ = try? wander?.setActive(petID: "reeds-egg-moth")
+        // Two-pets' coins and seen recap, with the furnished camp's purchases and
+        // placements on top, so nothing is due when the restored app opens.
+        let base = ledger(for: .twoPets) ?? RewardsLedger()
+        let camp = ledger(for: .furnishedCamp) ?? RewardsLedger()
+        let rewards = RewardsLedger(
+            awards: Array(base.awards.values) + Array(camp.awards.values),
+            recaps: Array(base.recaps.values),
+            purchases: camp.purchases,
+            placements: camp.placements
+        )
+        let bundle = BackupBundle(journal: journal, rewards: rewards, wander: wander)
+        return try? BackupFormat.encode(bundle, exportedAt: now, appVersion: "0.2.0", build: "demo")
+    }
+
     /// The rewards ledger a seed starts with; nil (nothing saved) for most.
     static func ledger(for seed: Seed) -> RewardsLedger? {
         switch seed {
         case .default, .onboarding, .midWeek, .oneDrink, .eggReady:
             return nil
-        case .wanderMid:
+        case .wanderMid, .twoPets, .foxVisit:
             // This is an established journal, so last week's recap was seen.
             guard let seeded = journal(for: seed) else { return nil }
             let today = LocalDate(now, calendar: calendar)
@@ -246,7 +273,7 @@ enum UISmokeMode {
             var state = WanderState(pets: [pondling], activePetID: pondling.id)
             _ = state.sync(journal: journal, today: today)
             return state
-        case .wanderMid:
+        case .wanderMid, .twoPets, .foxVisit:
             // Built directly, as the journal seeds are: 9 steps (8 check-ins
             // and the reflection), the shore and the moth egg found, and the
             // moth egg nested at check-in 6, so one more check-in hatches
@@ -274,7 +301,20 @@ enum UISmokeMode {
                 name: journal.settings.petName,
                 hatchedOn: first
             )
-            return WanderState(steps: steps, found: found, eggs: [moth], pets: [pondling], activePetID: pondling.id)
+            switch seed {
+            case .twoPets, .foxVisit:
+                // The moth hatched yesterday and was named Dot.
+                let dot = Pet(id: moth.id, speciesID: Species.moth.id, name: "Dot", hatchedOn: today.adding(days: -1))
+                var foundHere = found
+                if seed == .foxVisit {
+                    // One more step (today's walk) reached the fox.
+                    steps.append(StepAward(key: StepKey(.checkIn, today), awardedOn: today))
+                    foundHere["reeds-fox"] = today
+                }
+                return WanderState(steps: steps, found: foundHere, eggs: [], pets: [pondling, dot], activePetID: pondling.id)
+            default:
+                return WanderState(steps: steps, found: found, eggs: [moth], pets: [pondling], activePetID: pondling.id)
+            }
         }
     }
 }

@@ -208,23 +208,14 @@ final class JournalModel {
         updateSettings { $0.reminderEnabled = granted }
     }
 
-    // MARK: Backup
+    // MARK: Restore
 
-    /// Writes the journal to a temporary file for the share sheet.
-    func exportBackup() throws -> URL {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Tippy backup \(today).json")
-        try JournalCodec.encode(journal).write(to: url, options: .atomic)
-        return url
-    }
-
-    func importBackup(_ data: Data) {
-        do {
-            let imported = try JournalCodec.decode(data)
-            mutate { $0 = imported }
-            message = "Backup restored."
-        } catch {
-            message = "That file isn't a Tippy backup Tippy can read."
-        }
+    /// Replaces the journal wholesale (a restore). Saves first and throws if
+    /// that fails, so BackupModel can roll every context back together.
+    func replace(with journal: Journal) throws {
+        try store.save(journal)
+        self.journal = journal
+        rescheduleReminders()
     }
 
     // MARK: Plumbing

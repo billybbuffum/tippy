@@ -37,7 +37,7 @@ scripts/smoke-scenarios.py         lists the scenarios; which ones a PR changed;
 scripts/ui-smoke-comment.py        writes the PR comment from results.json
 scripts/ui-smoke-publish.sh        keeps the GIFs on the pr-media branch, one directory per PR
 scripts/check-architecture.py      enforces the layering rules of docs/architecture.md (CI: architecture.yml)
-docs/                              architecture (read first), research and plan, server rules
+docs/                              architecture (read first), research and plan, build specs (docs/specs/), server rules
 ```
 
 ## Building and installing

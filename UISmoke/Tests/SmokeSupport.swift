@@ -102,7 +102,7 @@ class SmokeScenario: XCTestCase {
 
     /// Launches the app in demo mode with `seed`. Every scenario starts
     /// here; the recording starts just before.
-    func launch(seed: Seed = .default) {
+    func launch(seed: Seed = .default, arguments: [String] = []) {
         self.seed = seed
         // The previous scenario's app goes before the recording starts, so
         // the clip opens on the home screen and then this launch.
@@ -110,7 +110,7 @@ class SmokeScenario: XCTestCase {
         signal("start", Data(seed.rawValue.utf8))
         waitForRecording()
         launchedAt = Date()
-        app.launchArguments = ["-ui-smoke", "-ui-smoke-seed", seed.rawValue]
+        app.launchArguments = ["-ui-smoke", "-ui-smoke-seed", seed.rawValue] + arguments
         app.launch()
     }
 

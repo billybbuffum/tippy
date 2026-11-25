@@ -19,6 +19,10 @@ enum UISmokeMode {
     static let isActive = false
     #endif
 
+    /// Explicit finite replay coverage; ordinary smoke scenarios still jump to
+    /// the end, and looping sprite animations remain disabled.
+    static let replaysWander = isActive && ProcessInfo.processInfo.arguments.contains("-ui-smoke-replay-wander")
+
     /// The named starting states a scenario can ask for. The names match
     /// `SmokeScenario.Seed` in UISmoke/Tests/SmokeSupport.swift.
     enum Seed: String, CaseIterable {
@@ -68,6 +72,9 @@ enum UISmokeMode {
 
     @MainActor
     static func makeModels() -> AppModels {
+        if replaysWander {
+            UserDefaults.standard.removeObject(forKey: "wander-last-seen-position")
+        }
         let seededJournal = journal(for: seed)
         let journalModel = JournalModel(
             store: InMemoryJournalStore(seededJournal),

@@ -45,6 +45,14 @@ struct TrailMapView: View {
             }
         }
         .overlay(alignment: .bottom) { findCard }
+        .overlay(alignment: .topTrailing) {
+            if playback != nil {
+                Button("Skip") { skip() }
+                    .buttonStyle(.borderedProminent)
+                    .padding()
+                    .accessibilityIdentifier("wander-skip-button")
+            }
+        }
         .contentShape(Rectangle())
         .simultaneousGesture(TapGesture().onEnded { skip() })
         .navigationTitle("The Wander")
@@ -193,7 +201,7 @@ struct TrailMapView: View {
         started = true
         let end = wander.position
         pose = .happy
-        guard !UISmokeMode.isActive else {
+        guard !UISmokeMode.isActive || UISmokeMode.replaysWander else {
             // Demo mode: the end state at once, so scenarios stay fast.
             shownStep = Double(end)
             scrollToPet(proxy, animated: false)
@@ -211,44 +219,49 @@ struct TrailMapView: View {
     }
 
     private func play(from: Int, to end: Int) async {
-        try? await Task.sleep(for: .seconds(0.4))
-        if reduceMotion {
-            withAnimation(.easeInOut(duration: 0.6)) {
-                fades += 1
-                shownStep = Double(end)
+        do {
+            try await Task.sleep(for: .seconds(0.4))
+            if reduceMotion {
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    fades += 1
+                    shownStep = Double(end)
+                }
+                try await Task.sleep(for: .seconds(0.6))
+                reveal(lastFind(after: from, through: end))
+                finish()
+                return
             }
-            try? await Task.sleep(for: .seconds(0.6))
-            reveal(lastFind(after: from, through: end))
+            var current = from
+            if end - from > 6 {
+                // A long way: slide through all but the last three, then hop those.
+                current = end - 3
+                withAnimation(.easeInOut(duration: 0.9)) { shownStep = Double(current) }
+                try await Task.sleep(for: .seconds(0.9))
+            }
+            while current < end {
+                if Task.isCancelled { return }
+                current += 1
+                hops += 1
+                withAnimation(.linear(duration: 0.35)) { shownStep = Double(current) }
+                try await Task.sleep(for: .seconds(0.35))
+                if Task.isCancelled { return }
+                landings += 1
+                if let landmark = Trail.landmarks.first(where: { $0.step == current }) {
+                    pose = .waiting
+                    try await Task.sleep(for: .seconds(0.6))
+                    if Task.isCancelled { return }
+                    sparkleAt = landmark.id
+                    sparkles += 1
+                    pose = landmark.isThrilling ? .thriving : .happy
+                    reveal(landmark)
+                    try await Task.sleep(for: .seconds(0.5))
+                }
+            }
             finish()
+        } catch {
+            // Cancellation ends playback before any more position or find changes.
             return
         }
-        var current = from
-        if end - from > 6 {
-            // A long way: slide through all but the last three, then hop those.
-            current = end - 3
-            withAnimation(.easeInOut(duration: 0.9)) { shownStep = Double(current) }
-            try? await Task.sleep(for: .seconds(0.9))
-        }
-        while current < end {
-            if Task.isCancelled { return }
-            current += 1
-            hops += 1
-            withAnimation(.linear(duration: 0.35)) { shownStep = Double(current) }
-            try? await Task.sleep(for: .seconds(0.35))
-            if Task.isCancelled { return }
-            landings += 1
-            if let landmark = Trail.landmarks.first(where: { $0.step == current }) {
-                pose = .waiting
-                try? await Task.sleep(for: .seconds(0.6))
-                if Task.isCancelled { return }
-                sparkleAt = landmark.id
-                sparkles += 1
-                pose = landmark.isThrilling ? .thriving : .happy
-                reveal(landmark)
-                try? await Task.sleep(for: .seconds(0.5))
-            }
-        }
-        finish()
     }
 
     /// A tap anywhere: straight to the end, with the latest find's card.
@@ -267,11 +280,10 @@ struct TrailMapView: View {
 
     private func finish() {
         playback = nil
-        if !UISmokeMode.isActive { lastSeenPosition = wander.position }
-        let end = wander.position
-        for landmark in Trail.landmarks where landmark.step > replayFrom && landmark.step <= end {
-            wander.announceFind(landmark.id)
+        if !UISmokeMode.isActive || UISmokeMode.replaysWander {
+            lastSeenPosition = wander.position
         }
+        // Finds skipped during a long replay remain on Home until actually shown.
     }
 
     /// Leaving mid-replay keeps the rest for next time; finds not shown yet
@@ -282,13 +294,14 @@ struct TrailMapView: View {
     }
 
     private func reveal(_ landmark: Landmark?) {
-        guard let landmark else { return }
+        guard let landmark,
+              wander.unannouncedFinds.contains(where: { $0.id == landmark.id }) else { return }
         wander.announceFind(landmark.id)
         withAnimation(.spring(duration: 0.4)) { revealed = landmark }
     }
 
     private func lastFind(after from: Int, through end: Int) -> Landmark? {
-        Trail.landmarks.last { $0.step > from && $0.step <= end && wander.isFound($0) }
+        wander.unannouncedFinds.last { $0.step > from && $0.step <= end }
     }
 
     private func scrollToPet(_ proxy: ScrollViewProxy, animated: Bool) {
@@ -302,8 +315,10 @@ struct TrailMapView: View {
     }
 
     private func follow(_ proxy: ScrollViewProxy) {
-        guard playback != nil else { return }
-        scrollToPet(proxy, animated: true)
+        guard started else { return }
+        // A skip clears playback before updating the step. Its final anchor must
+        // still be followed, immediately, even though there is no task left.
+        scrollToPet(proxy, animated: motion && playback != nil)
     }
 }
 

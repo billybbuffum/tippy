@@ -48,7 +48,7 @@ final class WanderScenarios: SmokeScenario {
     /// A check-in and a reflection are two steps: the pondling reaches the
     /// seashell on the shore, and Home shows the find card once.
     func testWanderFind() {
-        launch(seed: .default)
+        launch(seed: .default, arguments: ["-ui-smoke-replay-wander"])
         screen("home", element("wander-next-label"))
         XCTAssertEqual(element("wander-next-label").label, "2 steps to the Pond Shore")
         element("drink-free-button").tap()
@@ -63,6 +63,37 @@ final class WanderScenarios: SmokeScenario {
         element("wander-button").tap()
         screen("map", element("wander-pet"))
         XCTAssertEqual(element("landmark-shore-shell").value as? String, "found")
-        XCTAssertEqual(element("wander-pet").value as? String, "Step 2")
+        let caughtUp = NSPredicate(format: "value == %@", "Step 2")
+        expectation(for: caughtUp, evaluatedWith: element("wander-pet"))
+        waitForExpectations(timeout: 8)
+        XCTAssertFalse(element("find-card").exists, "a find dismissed on Home is not revealed again")
+        goBack(from: "The Wander")
+        element("wander-button").tap()
+        screen("map-again", element("wander-pet"))
+        XCTAssertFalse(element("find-card").exists, "reopening does not repeat an acknowledged find")
+    }
+
+    /// Unlike ordinary smoke mode, this runs the actual finite replay. Skipping
+    /// must settle at the final step and scroll its pet back into the viewport.
+    func testWanderSkipReplay() {
+        launch(seed: .wanderMid, arguments: ["-ui-smoke-replay-wander"])
+        screen("home", element("wander-button"))
+        element("wander-button").tap()
+        let skip = element("wander-skip-button")
+        XCTAssertTrue(skip.waitForExistence(timeout: 5), "the real replay offers Skip")
+        skip.tap()
+        let pet = element("wander-pet")
+        let atEnd = NSPredicate(format: "value == %@ AND hittable == true", "Step 9")
+        expectation(for: atEnd, evaluatedWith: pet)
+        waitForExpectations(timeout: 8)
+        pause()
+        screen("skipped", pet)
+        XCTAssertEqual(pet.value as? String, "Step 9", "the cancelled task cannot move the pet back")
+        XCTAssertTrue(pet.isHittable, "Skip scrolls to the final pet position")
+        goBack(from: "The Wander")
+        element("wander-button").tap()
+        screen("final-position-kept", pet)
+        XCTAssertEqual(pet.value as? String, "Step 9")
+        XCTAssertFalse(element("wander-skip-button").exists, "completed movement is not replayed")
     }
 }

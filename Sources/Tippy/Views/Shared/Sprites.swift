@@ -43,6 +43,7 @@ struct SpriteAnimation: Equatable {
     static let petIdle = SpriteAnimation(strip: "pet-idle", durations: [0.48, 0.16, 0.25, 0.16])
     static let petHop = SpriteAnimation(strip: "pet-hop", durations: [0.48, 0.10, 0.16, 0.11])
     static let eggWiggle = SpriteAnimation(strip: "egg-wiggle", durations: [0.65, 0.14, 0.14, 0.17])
+    static let coinShimmer = SpriteAnimation(strip: "coin-shimmer", durations: [0.25, 0.10, 0.12, 0.10])
 
     func frameIndex(at time: TimeInterval) -> Int {
         let total = durations.reduce(0, +)

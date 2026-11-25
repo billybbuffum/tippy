@@ -138,9 +138,11 @@ goes here, with a unit test.
 
 - `App/TippyApp.swift` builds the model graph once:
   - on a device: `FileJournalStore`, `NotificationReminderScheduler`, `.autoupdatingCurrent` and `{ Date() }`;
-  - under the UI smoke test, `UISmokeMode.makeModel()` swaps in `InMemoryJournalStore`, `SilentReminderScheduler`, a
-    fixed calendar and a fixed clock (Thursday 19 November 2026, 6 PM).
-- Models reach views through `.environment(model)` on the `WindowGroup`.
+  - under the UI smoke test, `UISmokeMode.makeModels()` swaps in `InMemoryJournalStore`, `InMemoryRewardsStore`,
+    `SilentReminderScheduler`, a fixed calendar and a fixed clock (Thursday 19 November 2026, 6 PM).
+- Both return an `AppModels` holder (one model per context) and wire the contexts together there: downstream models
+  follow the journal through `JournalModel.onJournalChange` (`rewards.sync(journal:today:)`).
+- Models reach views through `.environment(model)` on the `WindowGroup`, one per model.
 - Demo mode is compiled out on devices (`isActive` is a constant `false` off the simulator), and every seed is
   named in both `UISmokeMode.Seed` and `SmokeScenario.Seed`.
 
@@ -149,7 +151,7 @@ goes here, with a unit test.
 | Context | Package | Owns | Status |
 |---|---|---|---|
 | **Moderation** | `TippyModeration` | The journal: drink entries, drink-free days, reflections, the weekly goal per week, settings, week summaries, pet mood, reminder plan | Built |
-| **Rewards** | `TippyRewards` | The coin ledger, the shop catalog, purchases, decorations placed in the camp, weekly recaps | Next |
+| **Rewards** | `TippyRewards` | The coin ledger, the shop catalog, purchases, decorations placed in the camp, weekly recaps | Coins and recaps built; shop next |
 | **Wander** | `TippyWander` | The step ledger, the trail (areas, landmarks, finds), eggs, hatching, the pet collection, the active pet | Planned |
 
 Rules between contexts:
@@ -172,6 +174,9 @@ Rules between contexts:
 - A day is a `LocalDate`; an instant is a `Date`. Entries are filed under a `LocalDate`, which is decided once,
   with the user's calendar, when the entry is logged.
 - `Week` starts on the user's first weekday. Week math happens only in the domain.
+- Rewards identify a completed week by the Monday-start week containing its middle day. Switching between
+  Sunday and Monday in Settings cannot pay the same week's bonus or show its recap twice. Saved keys and
+  recap dates retain their original dates; daily awards continue to use exact logged dates.
 
 **Persistence and migration**
 - Each context's aggregate is one JSON file in Application Support, written atomically, with a `version`.
@@ -251,7 +256,7 @@ Reviewers also check what a script can't:
 3. **Port, if it needs the platform.** Declare a protocol in `Model/Ports.swift` (or a repository beside its
    aggregate), then write the adapter in `Adapters/` and a stand-in in `Demo/`.
 4. **Model.** Add derived properties and one intent method per use case, all going through `mutate`.
-5. **Composition.** Wire any new adapter in `App/TippyApp.swift` and `UISmokeMode.makeModel()`.
+5. **Composition.** Wire any new adapter in `App/TippyApp.swift` and `UISmokeMode.makeModels()`.
 6. **View.** Put it in its feature folder, reading the model, with accessibility identifiers.
 7. **Smoke scenario and seed.** Follow `CLAUDE.md`.
 8. Run `scripts/check-architecture.py` and `swift test --package-path Modules/<Context>`, then push and read CI.
@@ -286,8 +291,12 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Backup** | The journal exported as a file; restoring replaces everything | `JournalCodec`, `exportBackup` |
 | **Onboarding** | The first-launch questions | `hasOnboarded`, `OnboardingView` |
 | **Camp** *(Rewards)* | Home: the pond where the active pet lives and decorations are placed | — |
-| **Coins** *(Rewards)* | Earned per check-in, with bonuses for drink-free days and weeks within the goal; recorded once per fact, never revoked | — |
+| **Coins** *(Rewards)* | Earned per check-in (5), with bonuses for drink-free days (+3) and weeks within the goal (+15); recorded once per fact, never revoked. The balance is earned minus spent | `RewardsLedger`, `balance`, `EarningRules` |
+| **Award** *(Rewards)* | Coins recorded once for one fact (a check-in, a drink-free day, a week within its goal, a pouch); never removed | `Award`, `AwardPolicy`, `record` |
+| **Award key** *(Rewards)* | The fact an award was earned for, `"<kind>:<id>"` (`checkIn:2026-11-19`, `weekGoal:2026-11-16`); one award per key | `AwardKey` |
+| **Back-fill window** *(Rewards)* | A day earns coins only within 7 days of the sync (`day >= today - 7`), so remembering a missed day pays but old history can't be farmed | `backfillDays` |
 | **Decoration**, **purchase**, **placement** *(Rewards)* | A shop item; buying it; putting it in a camp spot (moving and storing are free) | — |
-| **Weekly recap** *(Rewards)* | The summary shown once a week ends, awarding its goal bonus | — |
+| **Weekly recap** *(Rewards)* | The summary of last week, shown once after it ends (never a queue of older weeks): total against that week's goal, days, coins with the goal bonus, reflections | `WeeklyRecap`, `RecapPolicy`, `WeeklyRecapView` |
+| **Next-week idea** *(Rewards)* | Her optional "one thing to try next week", written in the recap and shown on Home that week | `nextWeekIdea`, `NextWeekIdeaCard` |
 | **The Wander**, **step**, **landmark** *(Wander)* | The trail out from the pond; one step per check-in and per reflection; spots holding eggs, finds and visitors | — |
 | **Egg**, **hatch**, **collection**, **active pet** *(Wander)* | Found on the Wander, hatched after more check-ins, kept in the collection; the active pet is the one out in the camp | — |

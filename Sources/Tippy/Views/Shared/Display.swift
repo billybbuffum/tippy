@@ -98,3 +98,27 @@ struct DrinkIcon: View {
         }
     }
 }
+
+/// A week, usable as a sheet's item.
+struct WeekItem: Identifiable {
+    let week: Week
+    var id: LocalDate { week.start }
+}
+
+extension Week {
+    /// "Nov 9–15", or "Nov 30–Dec 6" across a month, with month names in the user's
+    /// language (a calendar without a locale would say "M11").
+    func rangeText(in calendar: Calendar) -> String {
+        var named = calendar
+        if (named.locale?.identifier ?? "").isEmpty { named.locale = .autoupdatingCurrent }
+        let months = named.shortMonthSymbols
+        func month(_ day: LocalDate) -> String { months.indices.contains(day.month - 1) ? months[day.month - 1] : "" }
+        if start.month == end.month { return "\(month(start)) \(start.day)–\(end.day)" }
+        return "\(month(start)) \(start.day)–\(month(end)) \(end.day)"
+    }
+}
+
+extension Int {
+    /// "1 coin", "8 coins".
+    var coinsText: String { self == 1 ? "1 coin" : "\(self) coins" }
+}

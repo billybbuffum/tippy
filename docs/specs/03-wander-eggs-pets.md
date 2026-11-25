@@ -189,6 +189,38 @@ missing, it falls back to the same species' `happy` pose, then to the pondling's
 The active pet replaces the hard-coded pondling everywhere: Home, the reflection sheet's little pet, the recap and
 the camp.
 
+### Movement and reveal
+
+The trail map replays what a sync produced. Use **SwiftUI** and the existing pet poses.
+
+- **Drive playback from `WanderEvents`.** The animation catches the screen up to saved progress.
+- **Last seen position:** a per-device `@AppStorage` value. On open, the map starts at the last position she saw,
+  then replays to the current one.
+- **Path:** the map draws its own path layer (a smooth curve through node centres) across every banner, so the route
+  is continuous even where a banner has no path of its own.
+- **Hop, one per step:** about 0.35 s each, using `keyframeAnimator`. The pet moves along the curve between nodes
+  with a vertical arc of about 18 pt and a quick squash on landing (`scaleEffect` 1.1 × 0.9, then back). Play
+  `dust-puff` (spec 05) at the pet's feet on each landing if the sprite exists.
+- **At a landmark:**
+  1. switch to the species' `waiting` pose (curious) for about 0.6 s;
+  2. play `sparkle` over the node;
+  3. switch to `thriving` for eggs and visitors, `happy` otherwise;
+  4. show the find card.
+- **Next node:** `find-glow` pulses under the next node while she's looking at the map.
+- **Pacing:**
+  - if more than 6 steps are pending, slide quickly through all but the last 3, then hop those;
+  - a tap anywhere skips to the end;
+  - never make her wait more than about 3 s before she can act.
+- **Reduce Motion:** cross-fade the pet to its final node, then fade in the find card. No hops, sparkles or glow loops.
+- **Demo mode:** jump straight to the end state, with no replay, so smoke scenarios stay fast and deterministic.
+  `wander-map` checks the end state.
+- **Scenery taps** (optional, later): drawn spots on the banners can be SwiftUI tap targets with identifiers (a
+  ripple, a wiggle). That needs no new framework.
+
+**When SpriteKit would be worth it:** free roaming or physics, many simultaneous actors or particles, a pannable or
+zoomable tilemap with a camera, or a continuous game loop. None of these are planned. If one is, contain it in a
+single `SpriteView` screen behind `WanderModel`. Expose interactive scene elements through an accessibility layer for VoiceOver and XCUITest.
+
 ## Demo seeds and smoke scenarios
 
 | Seed | State |

@@ -93,3 +93,11 @@ Both Camp backgrounds share the placement coordinates defined in the [art spec](
 | `string-lights-twinkle.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/string-lights-twinkle.gif) |
 | `turtle-egg-wiggle.png` | 4 | 650, 140, 140, 170 | [GIF](Animations/turtle-egg-wiggle.gif) |
 | `turtle-idle.png` | 4 | 480, 160, 250, 160 | [GIF](Animations/turtle-idle.gif) |
+
+### Wander effects
+
+| Strip | Frames | Frame durations (ms) | Playback | Preview |
+| --- | --- | --- | --- | --- |
+| `dust-puff.png` | 3 | 90, 90, 140 | Once | [GIF](Animations/dust-puff.gif) |
+| `sparkle.png` | 4 | 120, 120, 120, 200 | Once | [GIF](Animations/sparkle.gif) |
+| `find-glow.png` | 4 | 650, 140, 140, 170 | Loop | [GIF](Animations/find-glow.gif) |

@@ -1,6 +1,7 @@
 import Foundation
 import TippyModeration
 import TippyRewards
+import TippyWander
 
 /// Demo mode for the simulator UI smoke scenarios (`.github/workflows/ui-smoke.yml`,
 /// `UISmoke/`), as in ChoreLock. Launched with `-ui-smoke` on the simulator,
@@ -18,6 +19,10 @@ enum UISmokeMode {
     #else
     static let isActive = false
     #endif
+
+    /// Explicit finite replay coverage; ordinary smoke scenarios still jump to
+    /// the end, and looping sprite animations remain disabled.
+    static let replaysWander = isActive && ProcessInfo.processInfo.arguments.contains("-ui-smoke-replay-wander")
 
     /// The named starting states a scenario can ask for. The names match
     /// `SmokeScenario.Seed` in UISmoke/Tests/SmokeSupport.swift.
@@ -39,6 +44,12 @@ enum UISmokeMode {
         case lastWeekDone = "last-week-done"
         /// The `default` seed plus 120 coins (synthetic awards). Spec 02 uses it.
         case coins
+        /// Onboarded, nothing logged, and no Wander saved yet, so the
+        /// starter egg is in the nest (every other seed has hatched it).
+        case eggReady = "egg-ready"
+        /// Nov 11-18 logged with one reflection: 9 steps on the Wander, the
+        /// pondling out, the moth egg found and one check-in from hatching.
+        case wanderMid = "wander-mid"
     }
 
     /// The seed this launch asked for; `default` when none was named. An
@@ -69,15 +80,26 @@ enum UISmokeMode {
 
     @MainActor
     static func makeModels() -> AppModels {
+        if replaysWander {
+            UserDefaults.standard.removeObject(forKey: "wander-last-seen-position")
+        }
+        let seededJournal = journal(for: seed)
         let journalModel = JournalModel(
-            store: InMemoryJournalStore(journal(for: seed)),
+            store: InMemoryJournalStore(seededJournal),
             reminders: SilentReminderScheduler(),
             calendar: calendar,
             clock: { UISmokeMode.now }
         )
         let rewardsModel = RewardsModel(store: InMemoryRewardsStore(ledger(for: seed)), clock: { UISmokeMode.now })
-        journalModel.onJournalChange { rewardsModel.sync(journal: $0, today: $1) }
-        return AppModels(journal: journalModel, rewards: rewardsModel)
+        let wanderModel = WanderModel(
+            store: InMemoryWanderStore(wander(for: seed, journal: journalModel.journal)),
+            starterPetName: journalModel.settings.petName
+        )
+        journalModel.onJournalChange { journal, today in
+            rewardsModel.sync(journal: journal, today: today)
+            _ = wanderModel.sync(journal: journal, today: today)
+        }
+        return AppModels(journal: journalModel, rewards: rewardsModel, wander: wanderModel)
     }
 
     static func journal(for seed: Seed) -> Journal? {
@@ -127,6 +149,32 @@ enum UISmokeMode {
             )
             journal = Journal(settings: settings, entries: entries, drinkFreeDays: [wednesday], reflections: [reflection])
             journal.setWeeklyGoal(14, from: lastWeek)
+        case .eggReady:
+            journal = Journal(settings: settings)
+        case .wanderMid:
+            // Nov 11-18: drink-free days, two beers on alternate days, and
+            // one reflection on Sunday the 15th.
+            settings.reminderOffered = true
+            let first = today.adding(days: -8)
+            var entries: [DrinkEntry] = []
+            var free: Set<LocalDate> = []
+            for offset in 0..<8 {
+                let day = first.adding(days: offset)
+                if offset % 2 == 0 {
+                    free.insert(day)
+                } else {
+                    entries.append(beer(on: day, number: 0))
+                    entries.append(beer(on: day, number: 1))
+                }
+            }
+            let sunday = first.adding(days: 4)
+            let reflection = Reflection(
+                day: sunday,
+                promptID: ReflectionPrompts.prompt(for: sunday, hadDrinks: false).id,
+                answer: "Made soup and called my sister.",
+                answeredAt: sunday.startDate(in: calendar).addingTimeInterval(21 * 3600)
+            )
+            journal = Journal(settings: settings, entries: entries, drinkFreeDays: free, reflections: [reflection])
         }
         journal.setWeeklyGoal(14, from: journal.week(containing: today))
         return journal
@@ -135,8 +183,15 @@ enum UISmokeMode {
     /// The rewards ledger a seed starts with; nil (nothing saved) for most.
     static func ledger(for seed: Seed) -> RewardsLedger? {
         switch seed {
-        case .default, .onboarding, .midWeek, .oneDrink:
+        case .default, .onboarding, .midWeek, .oneDrink, .eggReady:
             return nil
+        case .wanderMid:
+            // This is an established journal, so last week's recap was seen.
+            guard let seeded = journal(for: seed) else { return nil }
+            let today = LocalDate(now, calendar: calendar)
+            var ledger = RewardsLedger(awards: AwardPolicy.eligibleAwards(journal: seeded, today: today))
+            ledger.markRecapSeen(seeded.week(containing: today).previous, at: now, nextWeekIdea: nil)
+            return ledger
         case .coins:
             // Six synthetic pouches of 20: 120 coins with no journal behind them.
             let awards = (1...6).compactMap { number in
@@ -154,6 +209,57 @@ enum UISmokeMode {
                 for award in AwardPolicy.eligibleAwards(journal: seeded, today: day) { ledger.record(award) }
             }
             return ledger
+        }
+    }
+
+    /// The Wander each seed starts with. Nil (nothing saved) gives the
+    /// starter egg. The other seeds have already hatched the pondling and
+    /// caught up with their journal, as if she'd been using the Wander, so
+    /// their scenarios open on Home with nothing new to celebrate.
+    static func wander(for seed: Seed, journal: Journal) -> WanderState? {
+        let today = LocalDate(now, calendar: calendar)
+        switch seed {
+        case .onboarding, .eggReady:
+            return nil
+        case .default, .midWeek, .oneDrink, .lastWeekDone, .coins:
+            let pondling = Pet(
+                id: WanderState.starterEggID,
+                speciesID: Species.pondling.id,
+                name: journal.settings.petName,
+                hatchedOn: today.adding(days: -8)
+            )
+            var state = WanderState(pets: [pondling], activePetID: pondling.id)
+            _ = state.sync(journal: journal, today: today)
+            return state
+        case .wanderMid:
+            // Built directly, as the journal seeds are: 9 steps (8 check-ins
+            // and the reflection), the shore and the moth egg found, and the
+            // moth egg nested at check-in 6, so one more check-in hatches
+            // it. (Synced day by day it would have been nested at check-in
+            // 7: 9 steps can't leave an egg found at step 8 one check-in
+            // from a 3-check-in hatch. The seed favours the scenario.)
+            let first = today.adding(days: -8)
+            var steps: [StepAward] = []
+            for offset in 0..<8 {
+                let day = first.adding(days: offset)
+                steps.append(StepAward(key: StepKey(.checkIn, day), awardedOn: day))
+            }
+            let sunday = first.adding(days: 4)
+            steps.append(StepAward(key: StepKey(.reflection, sunday), awardedOn: sunday))
+            let found: [String: LocalDate] = [
+                "shore-shell": first.adding(days: 1),
+                "shore-pouch": first.adding(days: 3),
+                "shore-bench": sunday,
+                "reeds-egg-moth": first.adding(days: 6),
+            ]
+            let moth = Egg(id: "reeds-egg-moth", speciesID: Species.moth.id, nestedAtCheckIn: 6)
+            let pondling = Pet(
+                id: WanderState.starterEggID,
+                speciesID: Species.pondling.id,
+                name: journal.settings.petName,
+                hatchedOn: first
+            )
+            return WanderState(steps: steps, found: found, eggs: [moth], pets: [pondling], activePetID: pondling.id)
         }
     }
 }

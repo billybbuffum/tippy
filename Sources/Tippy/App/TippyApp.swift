@@ -10,6 +10,7 @@ struct TippyApp: App {
         }
         .environment(models.journal)
         .environment(models.rewards)
+        .environment(models.wander)
     }
 
     /// The composition root: real adapters on the phone, demo ones under
@@ -24,7 +25,11 @@ struct TippyApp: App {
             clock: { Date() }
         )
         let rewardsModel = RewardsModel(store: FileRewardsStore.standard(), clock: { Date() })
-        journalModel.onJournalChange { rewardsModel.sync(journal: $0, today: $1) }
-        return AppModels(journal: journalModel, rewards: rewardsModel)
+        let wanderModel = WanderModel(store: FileWanderStore.standard(), starterPetName: journalModel.settings.petName)
+        journalModel.onJournalChange { journal, today in
+            rewardsModel.sync(journal: journal, today: today)
+            _ = wanderModel.sync(journal: journal, today: today)
+        }
+        return AppModels(journal: journalModel, rewards: rewardsModel, wander: wanderModel)
     }
 }

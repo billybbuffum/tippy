@@ -1,5 +1,7 @@
 import SwiftUI
 import UIKit
+import TippyModeration
+import TippyWander
 
 /// Loads the bundled pixel-art sprites (`Resources/Sprites`, kept in step with
 /// `Assets/Sprites` by scripts/sync-sprites.py) and slices animation strips.
@@ -44,6 +46,14 @@ struct SpriteAnimation: Equatable {
     static let petHop = SpriteAnimation(strip: "pet-hop", durations: [0.48, 0.10, 0.16, 0.11])
     static let eggWiggle = SpriteAnimation(strip: "egg-wiggle", durations: [0.65, 0.14, 0.14, 0.17])
     static let coinShimmer = SpriteAnimation(strip: "coin-shimmer", durations: [0.25, 0.10, 0.12, 0.10])
+    /// Played once: frames 1-5 crack and burst, frame 6 is the empty shell.
+    static let hatch = SpriteAnimation(strip: "hatch", durations: [0.30, 0.12, 0.12, 0.12, 0.20, 0.40])
+    /// Played once under the pet as it lands on the trail.
+    static let dustPuff = SpriteAnimation(strip: "dust-puff", durations: [0.09, 0.09, 0.14])
+    /// Played once over a landmark as its find is revealed.
+    static let sparkle = SpriteAnimation(strip: "sparkle", durations: [0.12, 0.12, 0.12, 0.20])
+    /// Looped under the next landmark on the trail map.
+    static let findGlow = SpriteAnimation(strip: "find-glow", durations: [0.65, 0.14, 0.14, 0.17])
 
     func frameIndex(at time: TimeInterval) -> Int {
         let total = durations.reduce(0, +)
@@ -90,8 +100,88 @@ struct AnimatedSprite: View {
     }
 }
 
+/// A strip played once each time `trigger` changes (from 0), then gone.
+/// It ends by itself, so it is safe in demo mode; callers skip it under
+/// Reduce Motion.
+struct OneShotSprite: View {
+    let animation: SpriteAnimation
+    let trigger: Int
+    @State private var frame: Int?
+
+    var body: some View {
+        let frames = SpriteLibrary.frames(of: animation)
+        let count = frames.count
+        ZStack {
+            if let frame, frame < count {
+                Image(decorative: frames[frame], scale: 1)
+                    .interpolation(.none)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            }
+        }
+        .task(id: trigger) {
+            guard trigger > 0, count > 0 else { return }
+            for index in 0..<count {
+                frame = index
+                try? await Task.sleep(for: .seconds(animation.durations[min(index, animation.durations.count - 1)]))
+                if Task.isCancelled { return }
+            }
+            frame = nil
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 /// Whether looping animations may play: not under Reduce Motion, not in demo mode.
 struct MotionAllowed {
     let reduceMotion: Bool
     var value: Bool { !reduceMotion && !UISmokeMode.isActive }
+}
+
+/// Sprite lookup for each species, with the fallbacks the art allows: a
+/// missing pose falls back to the species' happy pose, then to the
+/// pondling's pose (then `DrawnPet`).
+extension Species {
+    /// "pet-" for the pondling's strips (`pet-idle`), else the sprite prefix (`moth-idle`).
+    private var stripPrefix: String { spritePrefix.isEmpty ? "pet-" : spritePrefix }
+
+    @MainActor
+    func posePath(_ mood: PetMood) -> String? {
+        let candidates = ["Pet/\(spritePrefix)\(mood.rawValue)", "Pet/\(spritePrefix)happy", "Pet/\(mood.rawValue)"]
+        return candidates.first { SpriteLibrary.image($0) != nil }
+    }
+
+    /// Happy breathes and thriving delights (the pondling hops), when the strip exists.
+    @MainActor
+    func animation(for mood: PetMood) -> SpriteAnimation? {
+        let candidate: SpriteAnimation
+        switch mood {
+        case .happy:
+            candidate = SpriteAnimation(strip: "\(stripPrefix)idle", durations: [0.48, 0.16, 0.25, 0.16])
+        case .thriving:
+            if spritePrefix.isEmpty {
+                candidate = .petHop
+            } else {
+                candidate = SpriteAnimation(strip: "\(spritePrefix)delight", durations: [0.62, 0.18, 0.12, 0.18])
+            }
+        case .okay, .concerned, .waiting:
+            return nil
+        }
+        return SpriteLibrary.image("Animations/\(candidate.strip)") != nil ? candidate : nil
+    }
+
+    /// The egg still, falling back to the pondling's egg.
+    @MainActor
+    var eggPath: String {
+        let own = "Pet/\(spritePrefix)egg"
+        return SpriteLibrary.image(own) != nil ? own : "Pet/egg"
+    }
+
+    /// The egg's wiggle, when the strip exists.
+    @MainActor
+    var eggWiggle: SpriteAnimation? {
+        let candidate = SpriteAnimation(strip: "\(spritePrefix)egg-wiggle", durations: [0.65, 0.14, 0.14, 0.17])
+        return SpriteLibrary.image("Animations/\(candidate.strip)") != nil ? candidate : nil
+    }
 }

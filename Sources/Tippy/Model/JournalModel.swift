@@ -40,6 +40,22 @@ final class JournalModel {
         self.message = problem
     }
 
+    // MARK: Change hook
+
+    /// Downstream models (Rewards, Wander) subscribe here in the composition root.
+    /// Called after every successful change, on refresh (app to the front), and once
+    /// when a subscriber is added, always on the main actor.
+    private var changeHandlers: [@MainActor (Journal, LocalDate) -> Void] = []
+
+    func onJournalChange(_ handler: @escaping @MainActor (Journal, LocalDate) -> Void) {
+        changeHandlers.append(handler)
+        handler(journal, today)
+    }
+
+    private func notifyChange() {
+        for handler in changeHandlers { handler(journal, today) }
+    }
+
     // MARK: Time
 
     var now: Date {
@@ -209,22 +225,6 @@ final class JournalModel {
         } catch {
             message = "That file isn't a Tippy backup Tippy can read."
         }
-    }
-
-    // MARK: Change hook
-
-    /// Downstream models (Rewards, Wander) subscribe here in the composition root.
-    /// Called after every successful change, on refresh (app to the front), and once
-    /// when a subscriber is added, always on the main actor.
-    private var changeHandlers: [@MainActor (Journal, LocalDate) -> Void] = []
-
-    func onJournalChange(_ handler: @escaping @MainActor (Journal, LocalDate) -> Void) {
-        changeHandlers.append(handler)
-        handler(journal, today)
-    }
-
-    private func notifyChange() {
-        for handler in changeHandlers { handler(journal, today) }
     }
 
     // MARK: Plumbing

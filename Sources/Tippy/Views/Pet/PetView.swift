@@ -1,53 +1,63 @@
 import SwiftUI
 import TippyModeration
+import TippyWander
 
-/// The pet: the teal pond creature from the sprite pack, in the pose for its
-/// mood. Happy breathes and thriving hops; the other moods hold still, as
-/// does everything under Reduce Motion. It never looks sick or sad.
+/// The pet: the active pet's species (the teal pondling by default) in the
+/// pose for its mood, on a soft mood-coloured disc. Happy breathes and
+/// thriving hops; the other moods hold still, as does everything under
+/// Reduce Motion. It never looks sick or sad.
 struct PetView: View {
     let mood: PetMood
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var species: Species = .pondling
 
     var body: some View {
-        Group {
-            if let animation, MotionAllowed(reduceMotion: reduceMotion).value {
-                AnimatedSprite(animation: animation)
-            } else if SpriteLibrary.image("Pet/\(mood.rawValue)") != nil {
-                SpriteImage(path: "Pet/\(mood.rawValue)")
-            } else {
-                DrawnPet(mood: mood)
-            }
-        }
-        .aspectRatio(1, contentMode: .fit)
-        .background(Circle().fill(mood.color.opacity(0.18)).padding(8))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Your pet is \(mood.rawValue)")
-    }
-
-    private var animation: SpriteAnimation? {
-        switch mood {
-        case .happy: return .petIdle
-        case .thriving: return .petHop
-        case .okay, .concerned, .waiting: return nil
-        }
+        PetSprite(pose: mood, species: species)
+            .background(Circle().fill(mood.color.opacity(0.18)).padding(8))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Your pet is \(mood.rawValue)")
     }
 }
 
-/// The egg, wiggling unless motion is reduced.
-struct EggView: View {
+/// A species in a pose, with no background: `Pet/<prefix><pose>`, falling
+/// back to the species' happy pose, then the pondling's, then the drawn pet.
+/// Looping poses play only when motion is allowed.
+struct PetSprite: View {
+    let pose: PetMood
+    let species: Species
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
-            if MotionAllowed(reduceMotion: reduceMotion).value {
-                AnimatedSprite(animation: .eggWiggle)
+            if let animation = species.animation(for: pose), MotionAllowed(reduceMotion: reduceMotion).value {
+                AnimatedSprite(animation: animation)
+            } else if let path = species.posePath(pose) {
+                SpriteImage(path: path)
             } else {
-                SpriteImage(path: "Pet/egg")
+                DrawnPet(mood: pose)
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+    }
+}
+
+/// An egg of a species, wiggling unless motion is reduced (or it's told to
+/// hold still: the nest wiggles it only when it's about to hatch).
+struct EggView: View {
+    var species: Species = .pondling
+    var wiggles = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Group {
+            if wiggles, let wiggle = species.eggWiggle, MotionAllowed(reduceMotion: reduceMotion).value {
+                AnimatedSprite(animation: wiggle)
+            } else {
+                SpriteImage(path: species.eggPath)
             }
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Your pet's egg")
+        .accessibilityLabel("An egg")
     }
 }
 

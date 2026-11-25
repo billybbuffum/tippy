@@ -11,6 +11,7 @@ struct WeeklyRecapView: View {
 
     @Environment(JournalModel.self) private var model
     @Environment(RewardsModel.self) private var rewards
+    @Environment(WanderModel.self) private var wander
     @Environment(\.dismiss) private var dismiss
     @State private var idea = ""
 
@@ -23,7 +24,7 @@ struct WeeklyRecapView: View {
                         .font(.title2.bold())
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("recap-title-label")
-                    PetView(mood: summary.metGoal ? .thriving : .happy)
+                    PetView(mood: summary.metGoal ? .thriving : .happy, species: wander.activeSpecies)
                         .frame(width: 120, height: 120)
                         .frame(maxWidth: .infinity)
                     RecapNumbers(summary: summary, coins: rewards.coinsEarned(in: week), bonus: rewards.goalBonus(for: week))

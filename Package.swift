@@ -24,6 +24,8 @@ let package = Package(
         .package(path: "Modules/TippyModeration"),
         // The Rewards context (coins, weekly recaps), downstream of Moderation.
         .package(path: "Modules/TippyRewards"),
+        // The Wander context (steps, the trail, eggs, hatching, pets).
+        .package(path: "Modules/TippyWander"),
     ],
     targets: [
         .target(
@@ -31,6 +33,7 @@ let package = Package(
             dependencies: [
                 .product(name: "TippyModeration", package: "TippyModeration"),
                 .product(name: "TippyRewards", package: "TippyRewards"),
+                .product(name: "TippyWander", package: "TippyWander"),
             ],
             // The sprites the app shows, copied from Assets/Sprites by
             // scripts/sync-sprites.py. SwiftPM bundles them as Tippy_Tippy.bundle,

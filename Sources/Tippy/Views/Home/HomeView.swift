@@ -1,28 +1,30 @@
 import SwiftUI
 import TippyModeration
+import TippyWander
 
 struct HomeView: View {
     @Environment(JournalModel.self) private var model
     @Environment(RewardsModel.self) private var rewards
+    @Environment(WanderModel.self) private var wander
     @State private var showingLog = false
     @State private var showingSettings = false
     @State private var reflecting: DayItem?
+    @State private var showingWander = false
+    @State private var hatching: PetItem?
+    /// Whether Home is the screen in front (nothing pushed over it). A plain
+    /// box, not observed: flipping it must not re-render Home mid-push.
+    @State private var front = FrontFlag()
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    PetView(mood: model.mood)
-                        .frame(maxWidth: 240)
-                        .accessibilityIdentifier("pet-view")
-                    VStack(spacing: 6) {
-                        Text(model.settings.petName)
-                            .font(.title2.bold())
-                            .accessibilityIdentifier("pet-name-label")
-                        Text(model.mood.caption(petName: model.settings.petName))
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .accessibilityIdentifier("pet-mood-label")
+                    PetScene()
+                    WanderChips { showingWander = true }
+                    if let find = wander.unannouncedFinds.first {
+                        FindCard(landmark: find, petName: wander.shownPet?.name ?? model.settings.petName) {
+                            withAnimation { wander.announceFind(find.id) }
+                        }
                     }
                     if model.shouldOfferReminder {
                         // Near the top: it's shown once, so it must be in view
@@ -35,7 +37,12 @@ struct HomeView: View {
                 }
                 .padding()
             }
-            .modifier(RewardsPresentation(otherSheetShowing: showingLog || showingSettings || reflecting != nil))
+            .onAppear {
+                front.isFront = true
+                presentHatch()
+            }
+            .onDisappear { front.isFront = false }
+            .modifier(RewardsPresentation(otherSheetShowing: showingLog || showingSettings || reflecting != nil || hatching != nil || wander.state.pendingHatch != nil))
             .safeAreaInset(edge: .bottom) { actions }
             .navigationTitle("Tippy")
             .navigationBarTitleDisplayMode(.inline)
@@ -62,10 +69,22 @@ struct HomeView: View {
                     .accessibilityIdentifier("settings-button")
                 }
             }
-            .sheet(isPresented: $showingLog) { LogDrinkView() }
-            .sheet(isPresented: $showingSettings) { SettingsView() }
-            .sheet(item: $reflecting) { item in ReflectionSheet(day: item.day) }
+            .navigationDestination(isPresented: $showingWander) { TrailMapView() }
+            .sheet(isPresented: $showingLog, onDismiss: presentHatch) { LogDrinkView() }
+            .sheet(isPresented: $showingSettings, onDismiss: presentHatch) { SettingsView() }
+            .sheet(item: $reflecting, onDismiss: presentHatch) { item in ReflectionSheet(day: item.day) }
+            .fullScreenCover(item: $hatching) { item in HatchView(petID: item.id) }
+            .onChange(of: wander.state.pendingHatch) { presentHatch() }
         }
+    }
+
+    /// The hatch moment waits until Home is in front with no sheet up (a
+    /// check-in hatches the egg, then the reflection usually follows), so
+    /// it plays as soon as she's back.
+    private func presentHatch() {
+        guard front.isFront, hatching == nil, !showingLog, !showingSettings, reflecting == nil,
+              let id = wander.state.pendingHatch else { return }
+        hatching = PetItem(id: id)
     }
 
     private var todayLine: String {
@@ -115,6 +134,11 @@ struct HomeView: View {
         .padding(.vertical, 10)
         .background(.bar)
     }
+}
+
+/// A flag Home sets on appear and disappear without causing a re-render.
+final class FrontFlag {
+    var isFront = false
 }
 
 /// This week at a glance: a ring of the goal used, and the numbers, in

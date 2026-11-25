@@ -1,10 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import TippyModeration
+import TippyWander
 
 struct SettingsView: View {
     @Environment(JournalModel.self) private var model
+    @Environment(WanderModel.self) private var wander
     @Environment(\.dismiss) private var dismiss
+    @State private var petName = ""
     @State private var exportURL: URL?
     @State private var importing = false
     @State private var pendingImport: Data?
@@ -13,8 +16,10 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Your pet") {
-                    TextField("Name", text: setting(\.petName))
+                    TextField("Name", text: $petName)
                         .accessibilityIdentifier("pet-name-field")
+                        .onAppear { petName = wander.shownPet?.name ?? model.settings.petName }
+                        .onChange(of: petName) { rename(to: petName) }
                 }
                 Section {
                     Stepper(value: goalBinding, in: 0...70, step: 1) {
@@ -113,6 +118,16 @@ struct SettingsView: View {
             get: { model.settings[keyPath: keyPath] },
             set: { value in model.updateSettings { $0[keyPath: keyPath] = value } }
         )
+    }
+
+    /// Renames the active pet (its name lives in the Wander) and keeps the
+    /// journal's pet name, which the reminders use and the starter egg
+    /// hatches with, the same. An emptied field changes nothing yet.
+    private func rename(to name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if let pet = wander.shownPet, pet.name != trimmed { wander.name(pet.id, trimmed) }
+        if model.settings.petName != trimmed { model.updateSettings { $0.petName = trimmed } }
     }
 
     private var goalBinding: Binding<Double> {

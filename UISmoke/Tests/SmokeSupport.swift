@@ -34,6 +34,12 @@ class SmokeScenario: XCTestCase {
         case lastWeekDone = "last-week-done"
         /// `default` plus 120 coins.
         case coins
+        /// Onboarded, nothing logged, the starter egg in the nest (every
+        /// other seed has hatched the pondling already).
+        case eggReady = "egg-ready"
+        /// Nov 11-18 logged, one reflection: 9 steps on the Wander, the
+        /// pondling out, the moth egg nested one check-in from hatching.
+        case wanderMid = "wander-mid"
     }
 
     var app: XCUIApplication!
@@ -102,7 +108,7 @@ class SmokeScenario: XCTestCase {
 
     /// Launches the app in demo mode with `seed`. Every scenario starts
     /// here; the recording starts just before.
-    func launch(seed: Seed = .default) {
+    func launch(seed: Seed = .default, arguments: [String] = []) {
         self.seed = seed
         // The previous scenario's app goes before the recording starts, so
         // the clip opens on the home screen and then this launch.
@@ -110,7 +116,7 @@ class SmokeScenario: XCTestCase {
         signal("start", Data(seed.rawValue.utf8))
         waitForRecording()
         launchedAt = Date()
-        app.launchArguments = ["-ui-smoke", "-ui-smoke-seed", seed.rawValue]
+        app.launchArguments = ["-ui-smoke", "-ui-smoke-seed", seed.rawValue] + arguments
         app.launch()
     }
 

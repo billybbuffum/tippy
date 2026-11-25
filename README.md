@@ -125,6 +125,8 @@ Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`S
 | `furnished-camp` | 60 coins; lantern, sprout, seashell and lily planter placed in the camp, the mushroom in storage |
 | `egg-ready` | set up, nothing logged, no Wander saved yet: the starter egg is in the nest |
 | `wander-mid` | Nov 11–18 logged with one reflection: 9 steps on the Wander, the pondling out, the moth egg nested one check-in from hatching |
+| `two-pets` | `wander-mid` with the moth hatched (named Dot), the pondling out, the nest empty |
+| `fox-visit` | `two-pets` plus the fox at dusk found on the trail and not met yet |
 
 Every seed fixes the clock at Thursday 19 November 2026, 6 PM, keeps the journal and the Wander in memory, and sends no
 notifications, so runs are repeatable. `-ui-smoke-replay-wander` enables the finite trail replay for

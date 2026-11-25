@@ -15,6 +15,7 @@ struct HomeView: View {
     @State private var showingShop = false
     @State private var decorating = false
     @State private var placingItem: String?
+    @State private var visiting: VisitorItem?
     /// Whether Home is the screen in front (nothing pushed over it). A plain
     /// box, not observed: flipping it must not re-render Home mid-push.
     @State private var front = FrontFlag()
@@ -50,7 +51,7 @@ struct HomeView: View {
                 presentHatch()
             }
             .onDisappear { front.isFront = false }
-            .modifier(RewardsPresentation(otherSheetShowing: showingLog || showingSettings || showingShop || reflecting != nil || hatching != nil || wander.state.pendingHatch != nil))
+            .modifier(RewardsPresentation(otherSheetShowing: showingLog || showingSettings || showingShop || reflecting != nil || hatching != nil || wander.state.pendingHatch != nil || visiting != nil || wander.unseenVisitorID != nil))
             .safeAreaInset(edge: .bottom) { actions }
             .navigationTitle("Tippy")
             .navigationBarTitleDisplayMode(.inline)
@@ -87,18 +88,33 @@ struct HomeView: View {
                 }
             }
             .sheet(item: $reflecting, onDismiss: presentHatch) { item in ReflectionSheet(day: item.day) }
-            .fullScreenCover(item: $hatching) { item in HatchView(petID: item.id) }
+            .fullScreenCover(item: $hatching, onDismiss: presentHatch) { item in HatchView(petID: item.id) }
+            .sheet(item: $visiting, onDismiss: visitorDismissed) { item in
+                VisitorView(visitorID: item.id, petName: wander.shownPet?.name ?? model.settings.petName)
+            }
             .onChange(of: wander.state.pendingHatch) { presentHatch() }
+            .onChange(of: wander.unseenVisitorID) { presentHatch() }
         }
     }
 
-    /// The hatch moment waits until Home is in front with no sheet up (a
-    /// check-in hatches the egg, then the reflection usually follows), so
-    /// it plays as soon as she's back.
+    /// The hatch moment, then a visitor found on the Wander, each wait until
+    /// Home is in front with nothing else up (a check-in hatches the egg, then
+    /// the reflection usually follows), so they play as soon as she's back,
+    /// one at a time.
     private func presentHatch() {
-        guard front.isFront, hatching == nil, !showingLog, !showingSettings, !showingShop, reflecting == nil,
-              let id = wander.state.pendingHatch else { return }
-        hatching = PetItem(id: id)
+        guard front.isFront, hatching == nil, visiting == nil, !showingLog, !showingSettings, !showingShop,
+              reflecting == nil else { return }
+        if let id = wander.state.pendingHatch {
+            hatching = PetItem(id: id)
+        } else if let visitor = wander.unseenVisitorID {
+            visiting = VisitorItem(id: visitor)
+        }
+    }
+
+    /// Closing the visitor any way means she's met them.
+    private func visitorDismissed() {
+        if let visitor = wander.unseenVisitorID { wander.markVisitorSeen(visitor) }
+        presentHatch()
     }
 
     private var todayLine: String {

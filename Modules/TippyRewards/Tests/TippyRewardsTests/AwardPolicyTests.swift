@@ -130,6 +130,7 @@ final class AwardPolicyTests: XCTestCase {
             // Repeatedly switching in both directions cannot farm bonuses or recaps,
             // even across a save/reload. Daily rewards still use their exact day.
             for weekday in [1, 2, 1, 2] {
+                let previousIdea = ledger.recap(for: originalWeek)?.nextWeekIdea
                 journal.settings.firstWeekday = weekday
                 ledger = try RewardsCodec.decode(RewardsCodec.encode(ledger))
                 for award in AwardPolicy.eligibleAwards(journal: journal, today: today) { ledger.record(award) }
@@ -139,7 +140,7 @@ final class AwardPolicyTests: XCTestCase {
                 XCTAssertNotNil(ledger.award(for: .weekGoal(week)))
                 XCTAssertEqual(ledger.coinsEarned(in: week), ledger.coinsEarned(in: originalWeek))
                 XCTAssertNil(RecapPolicy.weekToRecap(journal: journal, ledger: ledger, today: today))
-                XCTAssertEqual(ledger.recap(for: week)?.nextWeekIdea, "Tea")
+                XCTAssertEqual(ledger.recap(for: week)?.nextWeekIdea, previousIdea)
                 ledger.markRecapSeen(week, at: noon, nextWeekIdea: "A walk")
                 XCTAssertEqual(ledger.recaps.count, 1)
             }

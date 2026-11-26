@@ -42,8 +42,8 @@ struct WeeklyRecapView: View {
                     PixelSection(title: "One thing to try next week") {
                         TextField("Optional", text: $idea, axis: .vertical)
                             .lineLimit(2...4)
-                            .pixelField()
                             .accessibilityIdentifier("recap-idea-field")
+                            .pixelField()
                     }
                 }
                 .padding(.horizontal, 6 * u)

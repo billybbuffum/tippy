@@ -107,7 +107,9 @@ struct PixelSegmented<Option: Hashable>: View {
 }
 
 extension View {
-    /// A text field on the UI grid: pixel text on a paper panel.
+    /// A text field on the UI grid: pixel text on a paper panel. Put the
+    /// field's accessibility identifier before this, on the field itself: after
+    /// it, the identifier names the panel, which can't take typing.
     func pixelField() -> some View {
         self
             .pixelFont(.body, 11)

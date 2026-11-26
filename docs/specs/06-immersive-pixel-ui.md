@@ -111,6 +111,11 @@ order.
    paths, so the painting and the map are made once with their branches.
 3. **History, Pets, Settings:** parchment lists inside a wooden frame. Settings keeps system controls where a pixel
    version would hurt accessibility (date pickers, the file picker).
+   - Pushed screens (History, Pets) use `.pixelScreen(_:identifier:)`: wooden planks, the title on a ribbon, and the
+     content in a parchment frame. They keep the system back button, because hiding the navigation bar would also
+     lose the swipe back. Markers: `history-screen`, `pets-screen`.
+   - Settings, the restore preview and History's drink-free day are parchment sheets: `settings-sheet`,
+     `restore-preview`, `drink-free-day-sheet`. Mark a day drink-free moves from the toolbar into the screen.
 
 ## Acceptance (Home)
 

@@ -7,7 +7,7 @@ final class SettingsScenarios: SmokeScenario {
         launch(seed: .default)
         screen("home", element("home-screen"))
         element("settings-button").tap()
-        screen("settings", app.navigationBars["Settings"])
+        screen("settings", element("settings-sheet"))
         XCTAssertTrue(element("weekly-goal-stepper").exists)
         reveal(element("build-number-label"))
         screen("settings-bottom", element("build-number-label"))

@@ -183,9 +183,13 @@ class SmokeScenario: XCTestCase {
         field.typeText(text)
     }
 
-    /// The back button of the navigation bar titled `title`.
+    /// The back button of the navigation bar titled `title`. A pixel screen
+    /// shows its title on a ribbon, which may leave the bar unnamed, so fall
+    /// back to the only navigation bar on screen.
     func goBack(from title: String) {
-        app.navigationBars[title].buttons.element(boundBy: 0).tap()
+        let named = app.navigationBars[title]
+        let bar = named.exists ? named : app.navigationBars.firstMatch
+        bar.buttons.element(boundBy: 0).tap()
     }
 
     /// Scrolls until `element` can be tapped (a Form row below the fold).

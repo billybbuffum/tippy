@@ -14,113 +14,139 @@ struct SettingsView: View {
     @Environment(BackupModel.self) private var backup
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Your pet") {
-                    TextField("Name", text: $petName)
-                        .accessibilityIdentifier("pet-name-field")
-                        .onAppear { petName = wander.shownPet?.name ?? model.settings.petName }
-                        .onChange(of: petName) { rename(to: petName) }
-                }
-                Section {
-                    Stepper(value: goalBinding, in: 0...70, step: 1) {
-                        Text("Weekly goal: \(Int(model.currentGoal)) drinks")
+        let u = PixelGrid.uiPoint
+        ParchmentSheet(title: "Settings", identifier: "settings-sheet") {
+            EmptyView()
+        } trailing: {
+            Button("Done") { dismiss() }
+                .buttonStyle(.pixel(.teal, size: 10, fill: false))
+                .accessibilityIdentifier("settings-done-button")
+        } content: {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6 * u) {
+                    PixelSection(title: "Your pet") {
+                        TextField("Name", text: $petName)
+                            .accessibilityIdentifier("pet-name-field")
+                            .pixelField()
+                            .onAppear { petName = wander.shownPet?.name ?? model.settings.petName }
+                            .onChange(of: petName) { rename(to: petName) }
                     }
-                    .accessibilityIdentifier("weekly-goal-stepper")
-                    Stepper(value: setting(\.baselinePerWeek), in: 0...150, step: 1) {
-                        Text("Before Tippy: \(Int(model.settings.baselinePerWeek)) a week")
-                    }
-                    .accessibilityIdentifier("baseline-stepper")
-                    Toggle("Track what drinks cost", isOn: costTracked)
-                        .accessibilityIdentifier("cost-toggle")
-                    if let cost = model.settings.costPerDrink {
-                        Stepper(value: costBinding, in: 0...100, step: 0.5) {
-                            Text("Cost per drink: \(cost.formatted(.currency(code: currencyCode)))")
+                    goal
+                    PixelSection(title: "Reminder") {
+                        Toggle("Daily reminder", isOn: remindersBinding)
+                            .toggleStyle(.pixel)
+                            .accessibilityIdentifier("reminder-toggle")
+                        if model.settings.reminderEnabled {
+                            DatePicker("Time", selection: reminderTime, displayedComponents: .hourAndMinute)
+                                .pixelFont(.body, 11)
+                                .accessibilityIdentifier("reminder-time-picker")
                         }
-                        .accessibilityIdentifier("cost-stepper")
                     }
-                    Picker("Weeks start on", selection: setting(\.firstWeekday)) {
-                        Text("Monday").tag(2)
-                        Text("Sunday").tag(1)
-                    }
-                    .accessibilityIdentifier("week-start-picker")
-                } header: {
-                    Text("Goal")
-                } footer: {
-                    Text("Counted in US standard drinks (14 g of alcohol). A new goal applies from this week on; past weeks keep theirs.")
+                    backupSection
+                    about
                 }
-                Section("Reminder") {
-                    Toggle("Daily reminder", isOn: remindersBinding)
-                        .accessibilityIdentifier("reminder-toggle")
-                    if model.settings.reminderEnabled {
-                        DatePicker("Time", selection: reminderTime, displayedComponents: .hourAndMinute)
-                            .accessibilityIdentifier("reminder-time-picker")
-                    }
+                .padding(.horizontal, 6 * u)
+                .padding(.bottom, 8 * u)
+            }
+        }
+        .task(id: model.journal) {
+            exportURL = try? backup.export()
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+            guard case .success(let url) = result else { return }
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            if let data = try? Data(contentsOf: url) { pendingRestore = backup.prepareRestore(from: data) }
+        }
+        .sheet(item: $pendingRestore) { pending in
+            RestorePreviewView(pending: pending)
+        }
+    }
+
+    private var goal: some View {
+        PixelSection(
+            title: "Goal",
+            footer: "Counted in US standard drinks (14 g of alcohol). A new goal applies from this week on; past weeks keep theirs."
+        ) {
+            PixelStepper(name: "Weekly goal", text: "Weekly goal: \(Int(model.currentGoal)) drinks", value: goalBinding, range: 0...70, step: 1)
+                .accessibilityIdentifier("weekly-goal-stepper")
+            PixelStepper(name: "Before Tippy", text: "Before Tippy: \(Int(model.settings.baselinePerWeek)) a week", value: setting(\.baselinePerWeek), range: 0...150, step: 1)
+                .accessibilityIdentifier("baseline-stepper")
+            Toggle("Track what drinks cost", isOn: costTracked)
+                .toggleStyle(.pixel)
+                .accessibilityIdentifier("cost-toggle")
+            if let cost = model.settings.costPerDrink {
+                PixelStepper(name: "Cost per drink", text: "Cost per drink: \(cost.formatted(.currency(code: currencyCode)))", value: costBinding, range: 0...100, step: 0.5)
+                    .accessibilityIdentifier("cost-stepper")
+            }
+            VStack(alignment: .leading, spacing: 2 * PixelGrid.uiPoint) {
+                Text("Weeks start on")
+                    .pixelFont(.body, 11)
+                PixelSegmented(options: [2, 1], selection: setting(\.firstWeekday)) { $0 == 2 ? "Monday" : "Sunday" }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("week-start-picker")
+        }
+    }
+
+    private var backupSection: some View {
+        let u = PixelGrid.uiPoint
+        return PixelSection(
+            title: "Backup",
+            footer: "Everything stays on this phone. Export a backup now and then (to Files or iCloud Drive) so a lost phone doesn't lose your history. A backup holds your log, coins, decorations and pets."
+        ) {
+            if let exportURL {
+                ShareLink(item: exportURL) {
+                    Text("Export a backup")
                 }
-                Section {
-                    if let exportURL {
-                        ShareLink(item: exportURL) {
-                            Label("Export a backup", systemImage: "square.and.arrow.up")
-                        }
-                        .accessibilityIdentifier("export-backup-button")
-                    }
-                    Text("Backups include your notes and reflections. Keep them somewhere private.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("export-privacy-note")
-                    Button {
-                        importing = true
-                    } label: {
-                        Label("Restore from a backup", systemImage: "square.and.arrow.down")
-                    }
-                    .accessibilityIdentifier("import-backup-button")
-                    if UISmokeMode.isActive {
-                        // XCUITest can't drive the system file picker reliably.
-                        Button("Use demo backup") {
-                            if let data = UISmokeMode.demoBackup() { pendingRestore = backup.prepareRestore(from: data) }
-                        }
-                        .accessibilityIdentifier("restore-demo-button")
-                    }
-                    if let restoredAt = backup.restoredAt {
-                        Label("Backup restored at \(restoredAt.formatted(date: .omitted, time: .shortened))", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                            .accessibilityIdentifier("restore-done-label")
-                    }
-                } header: {
-                    Text("Backup")
-                } footer: {
-                    Text("Everything stays on this phone. Export a backup now and then (to Files or iCloud Drive) so a lost phone doesn't lose your history. A backup holds your log, coins, decorations and pets.")
+                .buttonStyle(.pixel(.teal, size: 10))
+                .accessibilityIdentifier("export-backup-button")
+            }
+            Text("Backups include your notes and reflections. Keep them somewhere private.")
+                .pixelFont(.body, 9)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("export-privacy-note")
+            Button("Restore from a backup") { importing = true }
+                .buttonStyle(.pixel(.wood, size: 10))
+                .accessibilityIdentifier("import-backup-button")
+            if UISmokeMode.isActive {
+                // XCUITest can't drive the system file picker reliably.
+                Button("Use demo backup") {
+                    if let data = UISmokeMode.demoBackup() { pendingRestore = backup.prepareRestore(from: data) }
                 }
-                Section("About") {
-                    Text("Tippy is not medical advice. If you drink heavily every day, talk to a doctor before cutting back: stopping suddenly can be dangerous.")
-                        .font(.footnote)
-                    Link(destination: URL(string: "tel:18006624357")!) {
-                        Label("SAMHSA helpline: 1-800-662-4357", systemImage: "phone")
-                    }
-                    LabeledContent("Build", value: buildNumber)
-                        .accessibilityIdentifier("build-number-label")
+                .buttonStyle(.pixel(.paper, size: 10))
+                .accessibilityIdentifier("restore-demo-button")
+            }
+            if let restoredAt = backup.restoredAt {
+                HStack(spacing: 2 * u) {
+                    PixelIcon.check
+                    Text("Backup restored at \(restoredAt.formatted(date: .omitted, time: .shortened))")
+                        .pixelFont(.body, 10)
+                        .foregroundStyle(PixelPalette.leafDark)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("restore-done-label")
             }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .accessibilityIdentifier("settings-done-button")
-                }
+        }
+    }
+
+    private var about: some View {
+        PixelSection(title: "About") {
+            Text("Tippy is not medical advice. If you drink heavily every day, talk to a doctor before cutting back: stopping suddenly can be dangerous.")
+                .pixelFont(.body, 10)
+                .fixedSize(horizontal: false, vertical: true)
+            Link(destination: URL(string: "tel:18006624357")!) {
+                Text("SAMHSA helpline: 1-800-662-4357")
             }
-            .task(id: model.journal) {
-                exportURL = try? backup.export()
+            .buttonStyle(.pixel(.paper, size: 10))
+            HStack {
+                Text("Build")
+                Spacer()
+                Text(buildNumber)
             }
-            .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
-                guard case .success(let url) = result else { return }
-                let scoped = url.startAccessingSecurityScopedResource()
-                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                if let data = try? Data(contentsOf: url) { pendingRestore = backup.prepareRestore(from: data) }
-            }
-            .sheet(item: $pendingRestore) { pending in
-                RestorePreviewView(pending: pending)
-            }
+            .pixelFont(.body, 10)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("build-number-label")
         }
     }
 

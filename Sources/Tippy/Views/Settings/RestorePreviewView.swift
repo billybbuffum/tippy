@@ -12,53 +12,52 @@ struct RestorePreviewView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 10) {
-                        GridRow {
-                            Text("")
-                            Text("This phone").font(.caption.weight(.semibold))
-                            Text("Backup").font(.caption.weight(.semibold))
+        let u = PixelGrid.uiPoint
+        ParchmentSheet(title: "Restore a backup", identifier: "restore-preview") {
+            Button("Cancel") { dismiss() }
+                .buttonStyle(.pixel(.paper, size: 10, fill: false))
+                .accessibilityIdentifier("restore-cancel-button")
+        } trailing: {
+            EmptyView()
+        } content: {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6 * u) {
+                    PixelSection(
+                        title: nil,
+                        footer: "Restoring replaces everything on this phone with the backup: your log, reflections, coins, decorations and pets. Nothing is merged, so restoring the same backup twice just replaces it again."
+                    ) {
+                        Grid(alignment: .leading, horizontalSpacing: 8 * u, verticalSpacing: 4 * u) {
+                            GridRow {
+                                Text("")
+                                Text("THIS PHONE").pixelFont(.labelBold, 8)
+                                Text("BACKUP").pixelFont(.labelBold, 8)
+                            }
+                            .foregroundStyle(PixelPalette.tealDark)
+                            row("Days logged", \.daysLogged, id: "days")
+                            GridRow {
+                                Text("Dates")
+                                Text(range(preview.current)).pixelFont(.body, 9)
+                                Text(range(preview.backup)).pixelFont(.body, 9).accessibilityIdentifier("preview-backup-dates")
+                            }
+                            row("Drinks", \.drinks, id: "drinks")
+                            row("Reflections", \.reflections, id: "reflections")
+                            row("Coins", \.coins, id: "coins")
+                            row("Decorations", \.decorations, id: "decorations")
+                            row("Pets", \.pets, id: "pets")
                         }
-                        row("Days logged", \.daysLogged, id: "days")
-                        GridRow {
-                            Text("Dates")
-                            Text(range(preview.current)).font(.caption)
-                            Text(range(preview.backup)).font(.caption).accessibilityIdentifier("preview-backup-dates")
-                        }
-                        row("Drinks", \.drinks, id: "drinks")
-                        row("Reflections", \.reflections, id: "reflections")
-                        row("Coins", \.coins, id: "coins")
-                        row("Decorations", \.decorations, id: "decorations")
-                        row("Pets", \.pets, id: "pets")
+                        .pixelFont(.body, 11)
                     }
-                    .font(.subheadline)
-                    .monospacedDigit()
-                } footer: {
-                    Text("Restoring replaces everything on this phone with the backup: your log, reflections, coins, decorations and pets. Nothing is merged, so restoring the same backup twice just replaces it again.")
-                }
-                Section {
-                    Button(role: .destructive) {
+                    Button("Replace everything on this phone") {
                         backup.apply(pending)
                         dismiss()
-                    } label: {
-                        Text("Replace everything on this phone").frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.pixel(.wood, size: 10))
                     .accessibilityIdentifier("restore-confirm-button")
                 }
-            }
-            .navigationTitle("Restore a backup")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .accessibilityIdentifier("restore-cancel-button")
-                }
+                .padding(.horizontal, 6 * u)
+                .padding(.bottom, 8 * u)
             }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("restore-preview")
     }
 
     private var preview: RestorePreview { pending.preview }

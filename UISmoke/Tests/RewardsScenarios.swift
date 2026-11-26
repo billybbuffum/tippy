@@ -48,9 +48,9 @@ final class RewardsScenarios: SmokeScenario {
         screen("home", element("coin-balance-label"))
         XCTAssertEqual(element("coin-balance-label").label, "0 coins")
         element("history-button").tap()
-        screen("history", app.navigationBars["History"])
+        screen("history", element("history-screen"))
         element("add-drink-free-day-button").tap()
-        screen("pick-day", app.navigationBars["Drink-free day"])
+        screen("pick-day", element("drink-free-day-sheet"))
         // The calendar's day cells are system buttons with no identifiers, so
         // Monday 16 November is found by its date.
         let monday = app.buttons

@@ -92,7 +92,7 @@ struct TrailMapView: View {
                     open: canRevisit(loop.fork),
                     revisit: { revisit(loop.fork) }
                 )
-                .position(loop.center)
+                .position(loop.signpost)
                 ForEach(loop.nodes) { node in
                     SideNode(landmark: node.landmark, status: status(of: node.landmark))
                         .position(node.point)
@@ -452,8 +452,8 @@ private struct TrailFollow: ViewModifier, Animatable {
     }
 }
 
-/// A fork's signpost, in the middle of its side path's loop: the path's
-/// name and, while it's open to explore, a button to send the pet down it.
+/// A fork's signpost, beside the fork: the side path's name and, while
+/// it's open to explore, a button to send the pet down it.
 struct ForkSign: View {
     let fork: Fork
     let open: Bool

@@ -49,8 +49,9 @@ struct TrailLayout {
             )
         }
 
-        /// The middle of the loop, where its signpost stands.
-        var center: CGPoint { CGPoint(x: origin.x + direction * radius, y: origin.y) }
+        /// Where its signpost stands: beside the fork, on the other side of the
+        /// main path, so the loop and its stones stay clear.
+        let signpost: CGPoint
 
         func point(ofStep step: Int) -> CGPoint {
             point(at: CGFloat(step) / CGFloat(max(fork.sidePath.length, 1)))
@@ -115,12 +116,14 @@ struct TrailLayout {
                     nodes.append(Node(landmark: landmark, point: CGPoint(x: x, y: y), captionOnRight: onLeft))
                     index += 1
                 } else if let fork = item.fork {
+                    let direction: CGFloat = loops.count % 2 == 0 ? 1 : -1
                     loops.append(ForkLoop(
                         fork: fork,
                         origin: CGPoint(x: mapWidth * 0.5, y: y),
-                        direction: loops.count % 2 == 0 ? 1 : -1,
-                        radius: mapWidth * 0.17,
-                        height: 34
+                        direction: direction,
+                        radius: mapWidth * 0.19,
+                        height: 42,
+                        signpost: CGPoint(x: mapWidth * (0.5 - 0.25 * direction), y: y)
                     ))
                 }
             }

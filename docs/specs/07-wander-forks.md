@@ -167,7 +167,8 @@ coordinator's find replay, like `sync`.
   step 2 of 4".
 
 **As built** (the first version, on today's banner map): a fork takes its own row in the middle of the trail with
-its side path drawn as a dotted loop beside it and its signpost (with the Explore button) inside the loop. The
+its side path drawn as a dotted loop out to one side and its signpost (with the Explore button) on the other side
+of the main path. The
 replay follows the walked route by index, so it goes round a loop and back. Home's signpost reads "At a fork: which
 way?", "Exploring Heron's Inlet", or "3 steps to a fork" when a fork comes before the next landmark.
 

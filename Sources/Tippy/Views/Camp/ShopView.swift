@@ -13,73 +13,103 @@ struct ShopView: View {
     @State private var justBought: CatalogItem?
 
     var body: some View {
-        NavigationStack {
+        let u = PixelGrid.uiPoint
+        ParchmentSheet(title: "Shop", identifier: "shop-sheet") {
+            HStack(spacing: 2 * u) {
+                PixelIcon.coin
+                Text(rewards.balance.coinsText)
+                    .pixelFont(.body, 11)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .accessibilityIdentifier("shop-balance-label")
+            }
+        } trailing: {
+            Button("Done") { dismiss() }
+                .buttonStyle(.pixel(.teal, size: 10, fill: false))
+                .accessibilityIdentifier("shop-done-button")
+        } content: {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 6) {
-                        CoinIcon().frame(width: 24, height: 24)
-                        Text(rewards.balance.coinsText)
-                            .font(.headline)
-                            .monospacedDigit()
-                            .accessibilityIdentifier("shop-balance-label")
-                    }
+                VStack(alignment: .leading, spacing: 5 * u) {
                     if let item = justBought {
                         bought(item)
                     }
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 4 * u)], spacing: 4 * u) {
                         ForEach(CampCatalog.shopItems) { item in
                             ShopItemCard(item: item) { confirming = item }
                         }
                     }
                 }
-                .padding()
+                .padding(.horizontal, 6 * u)
+                .padding(.bottom, 8 * u)
             }
-            .navigationTitle("Shop")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .accessibilityIdentifier("shop-done-button")
+            .overlay {
+                if let item = confirming {
+                    confirm(item)
                 }
-            }
-            .alert("Buy this decoration?", isPresented: confirmShown, presenting: confirming) { item in
-                Button("Buy it") {
-                    if rewards.buy(item.id) {
-                        withAnimation(.spring(duration: 0.4)) { justBought = item }
-                    }
-                }
-                .accessibilityIdentifier("confirm-buy-button")
-                Button("Cancel", role: .cancel) {}
-            } message: { item in
-                Text("\(item.name) for \(item.price.coinsText).")
             }
         }
     }
 
-    private var confirmShown: Binding<Bool> {
-        Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } })
+    /// "Buy this decoration?", asked once on a pixel card over the shop.
+    private func confirm(_ item: CatalogItem) -> some View {
+        let u = PixelGrid.uiPoint
+        return ZStack {
+            PixelPalette.plum.opacity(0.45)
+                .ignoresSafeArea()
+                .onTapGesture { confirming = nil }
+                .accessibilityHidden(true)
+            VStack(spacing: 4 * u) {
+                DecorationSprite(item: item)
+                    .frame(width: 64, height: 64)
+                    .accessibilityHidden(true)
+                Text("Buy this decoration?")
+                    .pixelFont(.body, 13)
+                    .accessibilityAddTraits(.isHeader)
+                Text("\(item.name) for \(item.price.coinsText).")
+                    .pixelFont(.body, 10)
+                HStack(spacing: 3 * u) {
+                    Button("Cancel") { confirming = nil }
+                        .buttonStyle(.pixel(.paper, size: 10))
+                        .accessibilityIdentifier("cancel-buy-button")
+                    Button("Buy it") {
+                        confirming = nil
+                        if rewards.buy(item.id) {
+                            withAnimation(.spring(duration: 0.4)) { justBought = item }
+                        }
+                    }
+                    .buttonStyle(.pixel(.teal, size: 10))
+                    .accessibilityIdentifier("confirm-buy-button")
+                }
+            }
+            .foregroundStyle(PixelPalette.plum)
+            .frame(maxWidth: 280)
+            .pixelPanel(.parchment)
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(.isModal)
+            .accessibilityIdentifier("confirm-buy-dialog")
+        }
     }
 
     /// The little celebration after a purchase, with the shortcut to place it.
     private func bought(_ item: CatalogItem) -> some View {
-        HStack(spacing: 12) {
+        let u = PixelGrid.uiPoint
+        return HStack(spacing: 4 * u) {
             DecorationSprite(item: item)
                 .frame(width: 56, height: 56)
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 3 * u) {
                 Text("The \(item.name.lowercased()) is yours!")
-                    .font(.headline)
+                    .pixelFont(.body, 12)
                     .accessibilityIdentifier("bought-label")
                 Button("Place it now") {
                     placeNow(item.id)
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.pixel(.teal, size: 10, fill: false))
                 .accessibilityIdentifier("place-now-button")
             }
             Spacer(minLength: 0)
         }
-        .padding()
-        .background(Color.yellow.opacity(0.15), in: RoundedRectangle(cornerRadius: 16))
+        .pixelPanel(.chosen)
     }
 }
 
@@ -90,31 +120,29 @@ struct ShopItemCard: View {
     @Environment(RewardsModel.self) private var rewards
 
     var body: some View {
-        VStack(spacing: 8) {
+        let u = PixelGrid.uiPoint
+        VStack(spacing: 3 * u) {
             DecorationSprite(item: item)
                 .frame(width: 72, height: 72)
                 .accessibilityHidden(true)
             Text(item.name)
-                .font(.subheadline.weight(.semibold))
+                .pixelFont(.body, 11)
                 .multilineTextAlignment(.center)
                 .lineLimit(2, reservesSpace: true)
-            HStack(spacing: 4) {
-                CoinIcon().frame(width: 16, height: 16)
-                Text("\(item.price)").monospacedDigit()
+            HStack(spacing: 2 * u) {
+                PixelIcon.coin
+                Text("\(item.price)")
+                    .pixelFont(.body, 10)
             }
-            .font(.footnote)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(item.price.coinsText)
-            Button(action: buy) {
-                Text(buttonTitle).frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(owned || !affordable)
-            .accessibilityIdentifier("buy-\(item.id)-button")
+            Button(buttonTitle, action: buy)
+                .buttonStyle(.pixel(owned ? .paper : .teal, size: 10))
+                .disabled(owned || !affordable)
+                .accessibilityIdentifier("buy-\(item.id)-button")
         }
-        .padding(12)
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .pixelPanel(.paper)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("shop-item-\(item.id)")
     }

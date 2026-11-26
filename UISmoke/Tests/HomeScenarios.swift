@@ -36,7 +36,7 @@ final class HomeScenarios: SmokeScenario {
         launch(seed: .default)
         screen("home", element("home-screen"))
         element("log-drink-button").tap()
-        screen("log-sheet", app.navigationBars["Log a drink"])
+        screen("log-sheet", element("log-drink-sheet"))
         element("drink-kind-wine").tap()
         pause()
         screen("wine-chosen", element("drink-standard-label"))

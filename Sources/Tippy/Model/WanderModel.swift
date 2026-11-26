@@ -20,6 +20,9 @@ final class WanderModel {
     var message: String?
 
     private let store: any WanderStore
+    /// Called after a choice on the map changed what's found, so the
+    /// coordinator can pass the new finds to Rewards (as it does after a sync).
+    private var findsChanged: [@MainActor () -> Void] = []
 
     /// `starterPetName` names the starter egg when there's no saved Wander
     /// yet (first run, or the first run after the Wander shipped).
@@ -39,6 +42,8 @@ final class WanderModel {
     // MARK: Derived state
 
     var position: Int { state.position }
+    /// Where the pet is along her route (spec 07).
+    var walk: Walk { state.walk }
     var activePet: Pet? { state.activePet }
     var activeSpecies: Species { activePet?.species ?? .pondling }
 
@@ -85,6 +90,33 @@ final class WanderModel {
             unannouncedFinds.append(contentsOf: events.newlyFound)
         }
         return events
+    }
+
+    /// The coordinator subscribes here to hear about finds made outside a sync.
+    func onFindsChanged(_ handler: @escaping @MainActor () -> Void) {
+        findsChanged.append(handler)
+    }
+
+    /// Her choice at the fork the pet is waiting at.
+    @discardableResult
+    func choose(at forkID: String, explore: Bool, today: LocalDate) -> Bool {
+        routeChanged(mutate { try $0.choose(at: forkID, explore: explore, today: today) })
+    }
+
+    /// Sends the pet down a passed side path.
+    @discardableResult
+    func revisit(_ forkID: String, today: LocalDate) -> Bool {
+        routeChanged(mutate { try $0.revisit(forkID, today: today) })
+    }
+
+    private func routeChanged(_ events: WanderEvents?) -> Bool {
+        guard let events else { return false }
+        if !events.newlyFound.isEmpty {
+            lastEvents = events
+            unannouncedFinds.append(contentsOf: events.newlyFound)
+            for handler in findsChanged { handler() }
+        }
+        return true
     }
 
     /// Names a pet; naming the hatching pet ends its hatch moment.
@@ -160,6 +192,9 @@ extension WanderState.Problem {
         switch self {
         case .unknownPet: return "That pet isn't in your collection."
         case .emptyName: return "Give your pet a name first."
+        case .notWaitingAtFork: return "That fork isn't where your pet is waiting."
+        case .pathNotOpen: return "That path isn't open to explore."
+        case .onExcursion: return "Your pet is already exploring a side path."
         }
     }
 }

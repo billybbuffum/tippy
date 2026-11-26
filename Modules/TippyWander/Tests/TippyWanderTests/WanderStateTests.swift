@@ -197,22 +197,31 @@ final class WanderStateTests: XCTestCase {
         XCTAssertNil(state.checkInsUntilHatch)
     }
 
-    func testEggQueueAndNest() {
+    func testEggQueueAndNest() throws {
         var state = WanderState.starting(petName: "Sprout")
-        // A week of check-ins and reflections: 16 steps in one sync.
+        // A week of check-ins and reflections: 16 steps in one sync. The pet
+        // stops at the Heron's Inlet fork (step 11) with 5 steps saved.
         let first = state.sync(journal: journal(drinkFree: Array(-7...0), reflections: Array(-7...0)), today: today)
         XCTAssertEqual(first.newSteps, 16)
         XCTAssertEqual(first.newlyFound.map(\.id), [
-            "shore-shell", "shore-pouch", "shore-bench", "reeds-egg-moth", "reeds-fox", "reeds-pouch",
+            "shore-shell", "shore-pouch", "shore-bench", "reeds-egg-moth", "reeds-fox",
         ])
+        XCTAssertEqual(first.reachedFork?.id, "reeds-inlet")
+        XCTAssertEqual(state.walk.savedSteps, 5)
         XCTAssertEqual(first.hatched.map(\.id), [WanderState.starterEggID])
         XCTAssertEqual(state.nestedEgg?.id, "reeds-egg-moth", "the next egg moves into the nest")
         XCTAssertEqual(state.nestedEgg?.nestedAtCheckIn, 8, "and starts its count now")
         XCTAssertEqual(state.checkInsUntilHatch, 3)
         XCTAssertNoThrow(try state.name(petID: WanderState.starterEggID, "Sprout"))
 
-        // The next week: 16 more. The moth hatches; the turtle takes the
-        // nest; the seal waits in the basket.
+        // Staying on the trail walks the saved steps at once.
+        let passed = try state.choose(at: "reeds-inlet", explore: false, today: today)
+        XCTAssertEqual(passed.newlyFound.map(\.id), ["reeds-pouch"])
+        XCTAssertEqual(state.walk.mainStep, 16)
+
+        // The next week: 16 more. The moth hatches; the pet waits at the
+        // Hollow Willow fork; passing it reaches the turtle and the seal: the
+        // turtle takes the nest and the seal waits in the basket.
         let nextWeek = day(8)
         let second = state.sync(
             journal: journal(drinkFree: Array(-7...0), reflections: Array(-7...0), from: nextWeek),
@@ -220,8 +229,12 @@ final class WanderStateTests: XCTestCase {
         )
         XCTAssertEqual(second.newSteps, 16)
         XCTAssertEqual(state.position, 32)
-        XCTAssertEqual(second.newlyFound.map(\.id), ["willow-lantern", "willow-egg-turtle", "willow-pouch", "woods-egg-seal"])
+        XCTAssertEqual(second.newlyFound.map(\.id), ["willow-lantern"])
+        XCTAssertEqual(second.reachedFork?.id, "willow-hollow")
         XCTAssertEqual(second.hatched.map(\.id), ["reeds-egg-moth"], "at most one egg hatches per sync")
+        let onward = try state.choose(at: "willow-hollow", explore: false, today: nextWeek)
+        XCTAssertEqual(onward.newlyFound.map(\.id), ["willow-egg-turtle", "willow-pouch", "woods-egg-seal"])
+        XCTAssertEqual(state.walk.mainStep, 32)
         XCTAssertEqual(state.eggs.map(\.id), ["willow-egg-turtle", "woods-egg-seal"])
         XCTAssertEqual(state.nestedEgg?.nestedAtCheckIn, 16)
         XCTAssertEqual(state.basket.map(\.id), ["woods-egg-seal"])

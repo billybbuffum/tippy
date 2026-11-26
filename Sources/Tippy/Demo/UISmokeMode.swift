@@ -59,6 +59,12 @@ enum UISmokeMode {
         case twoPets = "two-pets"
         /// `two-pets` one step further: the fox at dusk found on the trail and not met yet.
         case foxVisit = "fox-visit"
+        /// `two-pets` with 13 steps and the fox met: the pet waits at the
+        /// Heron's Inlet fork (step 11) with 2 steps saved (spec 07).
+        case atFork = "at-fork"
+        /// 15 steps with Heron's Inlet passed: the pet at step 15, the side
+        /// path open to explore from the map.
+        case forkPassed = "fork-passed"
     }
 
     /// The seed this launch asked for; `default` when none was named. An
@@ -160,7 +166,7 @@ enum UISmokeMode {
             journal.setWeeklyGoal(14, from: lastWeek)
         case .eggReady:
             journal = Journal(settings: settings)
-        case .wanderMid, .twoPets, .foxVisit:
+        case .wanderMid, .twoPets, .foxVisit, .atFork, .forkPassed:
             // Nov 11-18: drink-free days, two beers on alternate days, and
             // one reflection on Sunday the 15th.
             settings.reminderOffered = true
@@ -215,7 +221,7 @@ enum UISmokeMode {
         switch seed {
         case .default, .onboarding, .midWeek, .oneDrink, .eggReady:
             return nil
-        case .wanderMid, .twoPets, .foxVisit:
+        case .wanderMid, .twoPets, .foxVisit, .atFork, .forkPassed:
             // This is an established journal, so last week's recap was seen.
             guard let seeded = journal(for: seed) else { return nil }
             let today = LocalDate(now, calendar: calendar)
@@ -273,7 +279,7 @@ enum UISmokeMode {
             var state = WanderState(pets: [pondling], activePetID: pondling.id)
             _ = state.sync(journal: journal, today: today)
             return state
-        case .wanderMid, .twoPets, .foxVisit:
+        case .wanderMid, .twoPets, .foxVisit, .atFork, .forkPassed:
             // Built directly, as the journal seeds are: 9 steps (8 check-ins
             // and the reflection), the shore and the moth egg found, and the
             // moth egg nested at check-in 6, so one more check-in hatches
@@ -302,6 +308,26 @@ enum UISmokeMode {
                 hatchedOn: first
             )
             switch seed {
+            case .atFork, .forkPassed:
+                // Dot hatched and the fox met, then more reflections than the
+                // journal shows (steps are never taken back), to reach the fork.
+                let dot = Pet(id: moth.id, speciesID: Species.moth.id, name: "Dot", hatchedOn: today.adding(days: -1))
+                var foundHere = found
+                foundHere["reeds-fox"] = today.adding(days: -1)
+                let extra = seed == .atFork ? [0, 1, 2, 3] : [0, 1, 2, 3, 5, 6]
+                for offset in extra {
+                    let day = first.adding(days: offset)
+                    steps.append(StepAward(key: StepKey(.reflection, day), awardedOn: day))
+                }
+                var route: [RouteChoice] = []
+                if seed == .forkPassed {
+                    foundHere["reeds-pouch"] = today.adding(days: -1)
+                    route = [.pass(forkID: "reeds-inlet")]
+                }
+                return WanderState(
+                    steps: steps, found: foundHere, eggs: [], pets: [pondling, dot], activePetID: pondling.id,
+                    seenVisitors: ["fox-at-dusk"], route: route
+                )
             case .twoPets, .foxVisit:
                 // The moth hatched yesterday and was named Dot.
                 let dot = Pet(id: moth.id, speciesID: Species.moth.id, name: "Dot", hatchedOn: today.adding(days: -1))

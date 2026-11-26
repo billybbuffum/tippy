@@ -125,9 +125,17 @@ extension Int {
 }
 
 extension WanderState {
-    /// The next-landmark chip: "4 steps to the Reed Bed" when the next
-    /// landmark is in a new area, else "2 steps to the next landmark".
+    /// The signpost on Home: "4 steps to the Reed Bed" when the next
+    /// landmark is in a new area, else "2 steps to the next landmark"; at a
+    /// fork, "At a fork: which way?"; on a side path, "Exploring Heron's
+    /// Inlet"; and "3 steps to a fork" when one comes first (spec 07).
     var nextLandmarkCaption: String {
+        let walk = self.walk
+        if walk.waitingAt != nil { return "At a fork: which way?" }
+        if let fork = walk.excursion { return "Exploring \(fork.sidePath.name)" }
+        if let ahead = nextFork {
+            return ahead.steps == 1 ? "1 step to a fork" : "\(ahead.steps) steps to a fork"
+        }
         guard let next = nextLandmark, let steps = stepsToNextLandmark else { return "More of the Wander opens soon" }
         let count = steps == 1 ? "1 step" : "\(steps) steps"
         if let area = Trail.area(of: next.id), area.id != currentArea?.id {

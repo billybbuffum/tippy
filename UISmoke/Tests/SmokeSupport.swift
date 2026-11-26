@@ -46,6 +46,10 @@ class SmokeScenario: XCTestCase {
         case twoPets = "two-pets"
         /// `two-pets` plus the fox at dusk found and not met yet.
         case foxVisit = "fox-visit"
+        /// 13 steps, the fox met: the pet waits at the Heron's Inlet fork with 2 steps saved.
+        case atFork = "at-fork"
+        /// 15 steps with Heron's Inlet passed and open to explore.
+        case forkPassed = "fork-passed"
     }
 
     var app: XCUIApplication!

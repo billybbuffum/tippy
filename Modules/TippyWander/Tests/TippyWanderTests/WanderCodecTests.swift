@@ -24,7 +24,7 @@ final class WanderCodecTests: XCTestCase {
         XCTAssertEqual(decoded.position, 10)
         let text = String(decoding: data, as: UTF8.self)
         XCTAssertTrue(text.contains("\"checkIn:2026-11-19\""), text)
-        XCTAssertTrue(text.contains("\"version\" : 1"), text)
+        XCTAssertTrue(text.contains("\"version\" : 2"), text)
     }
 
     func testDecodesAnOldShapeWithMissingFields() throws {
@@ -56,7 +56,7 @@ final class WanderCodecTests: XCTestCase {
     }
 
     func testRefusesANewerVersion() {
-        let json = #"{ "version": 2, "steps": [] }"#
+        let json = #"{ "version": 3, "steps": [] }"#
         XCTAssertThrowsError(try WanderCodec.decode(Data(json.utf8)))
     }
 

@@ -64,18 +64,21 @@ public enum Trail {
         ]),
     ]
 
-    /// Every landmark in trail order (by step).
+    /// Every main-trail landmark in trail order (by step). Side paths' are in
+    /// `forks`; `allLandmarks` has both.
     public static var landmarks: [Landmark] { areas.flatMap(\.landmarks) }
 
     /// The step of the last landmark: where the trail ends for now.
     public static var length: Int { landmarks.last?.step ?? 0 }
 
+    /// A landmark on the main trail or a side path.
     public static func landmark(id: String) -> Landmark? {
-        landmarks.first { $0.id == id }
+        allLandmarks.first { $0.id == id }
     }
 
-    /// The area a landmark belongs to.
+    /// The area a landmark belongs to (a side path's is its fork's).
     public static func area(of landmarkID: String) -> Area? {
-        areas.first { area in area.landmarks.contains { $0.id == landmarkID } }
+        if let fork = fork(ofLandmark: landmarkID) { return areas.first { $0.id == fork.areaID } }
+        return areas.first { area in area.landmarks.contains { $0.id == landmarkID } }
     }
 }

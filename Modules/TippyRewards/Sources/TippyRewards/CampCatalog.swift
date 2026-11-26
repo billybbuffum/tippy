@@ -72,6 +72,10 @@ public enum CampCatalog {
         item("string-lights", "String lights", 90, .light),
         item("willow-arch", "Willow arch", 150, .ground),
         item("firefly-jar", "Firefly jar", 0, .light, inShop: false),
+        // Side-path finds on the Wander (spec 07), never sold.
+        item("pebble-cairn", "Pebble cairn", 0, .ground, inShop: false),
+        item("lily-bloom", "Lily in bloom", 0, .water, inShop: false),
+        item("glow-mushrooms", "Glowing mushrooms", 0, .light, inShop: false),
     ]
 
     public static func item(_ id: String) -> CatalogItem? { items.first { $0.id == id } }

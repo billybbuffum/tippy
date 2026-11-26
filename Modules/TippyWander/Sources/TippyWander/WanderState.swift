@@ -8,16 +8,25 @@ import TippyModeration
 /// - pet IDs are unique, and no egg shares an ID with a pet;
 /// - `activePetID` is nil or names a pet; so does `pendingHatch`;
 /// - found landmarks are never un-found, and steps are never removed, so
-///   editing the journal never rewinds the trail or un-hatches anything.
-/// The trail position is derived (the number of steps), never stored.
+///   editing the journal never rewinds the trail or un-hatches anything;
+/// - the route only grows (spec 07), so the pet never walks backwards.
+/// The trail position (the number of steps) and the walk (where those steps
+/// took the pet along her route) are derived, never stored.
 public struct WanderState: Hashable, Sendable {
-    public static let currentVersion = 1
+    /// 2 adds the route (forks and side paths, spec 07).
+    public static let currentVersion = 2
     /// The egg every Wander starts with, and the pondling that hatches from it.
     public static let starterEggID = "starter"
 
     public enum Problem: Error, Equatable, Sendable {
         case unknownPet
         case emptyName
+        /// A way can only be chosen at the fork the pet is waiting at.
+        case notWaitingAtFork
+        /// Only a passed side path not walked yet can be revisited.
+        case pathNotOpen
+        /// One side path at a time.
+        case onExcursion
     }
 
     /// Once-only: `checkIn:<day>` and `reflection:<day>`.
@@ -32,6 +41,8 @@ public struct WanderState: Hashable, Sendable {
     public private(set) var seenVisitors: Set<String>
     /// A pet waiting for its naming moment.
     public private(set) var pendingHatch: String?
+    /// Her choices at forks and her revisits, in order; append-only.
+    public private(set) var route: [RouteChoice]
 
     /// A state from saved or seeded parts, repaired to keep the invariants
     /// (as `Journal.init` does): duplicates dropped, only the first egg may
@@ -44,7 +55,8 @@ public struct WanderState: Hashable, Sendable {
         pets: [Pet] = [],
         activePetID: String? = nil,
         seenVisitors: Set<String> = [],
-        pendingHatch: String? = nil
+        pendingHatch: String? = nil,
+        route: [RouteChoice] = []
     ) {
         var petIDs = Set<String>()
         var uniquePets: [Pet] = []
@@ -76,6 +88,7 @@ public struct WanderState: Hashable, Sendable {
         self.activePetID = active
         self.seenVisitors = seenVisitors
         self.pendingHatch = pending
+        self.route = route.filter { Trail.fork(id: $0.forkID) != nil }
     }
 
     /// A new Wander: the starter pondling egg in the nest, to be named
@@ -93,31 +106,66 @@ public struct WanderState: Hashable, Sendable {
 
     // MARK: Derived
 
-    /// The trail position: one per step, never stored.
+    /// The trail position: one per step, never stored. Where those steps
+    /// took the pet is `walk`.
     public var position: Int { steps.count }
+
+    /// Where the pet is along her route, and whether it waits at a fork.
+    public var walk: Walk { RoutePolicy.walk(steps: position, route: route) }
+
+    /// Every spot walked, in order, one per step used.
+    public var walkedPath: [TrailSpot] { RoutePolicy.path(steps: position, route: route) }
 
     public var checkInCount: Int { steps.keys.filter { $0.kind == .checkIn }.count }
 
-    /// The first landmark not found yet, in trail order; nil at the trail's end.
+    /// The next landmark ahead of the pet that isn't found yet: on the side
+    /// path it's walking, else on the main trail. Nil while it waits at a
+    /// fork (see `walk.waitingAt`) and at the trail's end.
     public var nextLandmark: Landmark? {
-        Trail.landmarks.first { found[$0.id] == nil }
+        let walk = self.walk
+        if walk.waitingAt != nil { return nil }
+        if let fork = walk.excursion, case .side(_, let at) = walk.spot,
+           let next = fork.sidePath.landmarks.first(where: { $0.step > at && found[$0.id] == nil }) {
+            return next
+        }
+        return Trail.landmarks.first { $0.step > walk.mainStep && found[$0.id] == nil }
     }
 
     /// Steps still to walk to `nextLandmark`.
     public var stepsToNextLandmark: Int? {
-        nextLandmark.map { max($0.step - position, 0) }
+        guard let next = nextLandmark else { return nil }
+        let walk = self.walk
+        if let fork = walk.excursion, case .side(_, let at) = walk.spot {
+            if Trail.fork(ofLandmark: next.id)?.id == fork.id { return max(next.step - at, 0) }
+            return (fork.sidePath.length - at) + max(next.step - walk.mainStep, 0)
+        }
+        return max(next.step - walk.mainStep, 0)
     }
 
-    /// Everything found so far, in trail order. The app layer replays the
-    /// decorations and pouches among them into Rewards (idempotently).
+    /// The next fork ahead on the main trail that she hasn't chosen at yet,
+    /// and the steps to it, when it comes before the next landmark.
+    public var nextFork: (fork: Fork, steps: Int)? {
+        let walk = self.walk
+        guard walk.waitingAt == nil, walk.excursion == nil,
+              let fork = Trail.forks.first(where: { $0.mainStep > walk.mainStep }),
+              !route.contains(where: { $0.forkID == fork.id }) else { return nil }
+        if let next = nextLandmark, Trail.fork(ofLandmark: next.id) == nil, next.step < fork.mainStep { return nil }
+        return (fork, fork.mainStep - walk.mainStep)
+    }
+
+    /// Everything found so far, main trail and side paths, in trail order.
+    /// The app layer replays the decorations and pouches among them into
+    /// Rewards (idempotently).
     public var foundLandmarks: [Landmark] {
-        Trail.landmarks.filter { found[$0.id] != nil }
+        Trail.allLandmarks.filter { found[$0.id] != nil }
     }
 
-    /// The area of the latest landmark found; nil before the first find,
-    /// while the pet is still at the pond.
+    /// The area the pet is in: of the side path it's walking, else of the
+    /// latest main-trail landmark found; nil before the first find, while the
+    /// pet is still at the pond.
     public var currentArea: Area? {
-        foundLandmarks.last.flatMap { Trail.area(of: $0.id) }
+        if let fork = walk.excursion { return Trail.areas.first { $0.id == fork.areaID } }
+        return Trail.landmarks.last(where: { found[$0.id] != nil }).flatMap { Trail.area(of: $0.id) }
     }
 
     /// The egg in the nest, if any.
@@ -153,8 +201,9 @@ public struct WanderState: Hashable, Sendable {
 
     /// Catches the Wander up with the journal, deterministically:
     /// 1. records new step awards (`StepPolicy`, once each);
-    /// 2. marks every landmark at or behind the position found today; an egg
-    ///    find joins the end of the egg queue;
+    /// 2. walks them along her route (`RoutePolicy`), marking every landmark
+    ///    on the way found today; an egg find joins the end of the egg queue.
+    ///    At a fork she hasn't chosen at, the pet waits and the rest are saved;
     /// 3. nests the first waiting egg if the nest is empty;
     /// 4. hatches the nested egg once enough check-ins have passed since it
     ///    was nested, then nests the next (which starts its own count, so at
@@ -164,20 +213,13 @@ public struct WanderState: Hashable, Sendable {
         var events = WanderEvents()
         nameStarterEgg(journal.settings.petName)
 
+        let before = walk
         for key in StepPolicy.eligibleSteps(journal: journal, today: today) where steps[key] == nil {
             steps[key] = StepAward(key: key, awardedOn: today)
             events.newSteps += 1
         }
-
-        let reached = position
-        for landmark in Trail.landmarks where landmark.step <= reached && found[landmark.id] == nil {
-            found[landmark.id] = today
-            events.newlyFound.append(landmark)
-            if case .egg(let speciesID) = landmark.content, Species.with(id: speciesID) != nil,
-               !eggs.contains(where: { $0.id == landmark.id }), pet(id: landmark.id) == nil {
-                eggs.append(Egg(id: landmark.id, speciesID: speciesID))
-            }
-        }
+        events.newlyFound = markFinds(today: today)
+        noteWalkChanges(from: before, into: &events)
 
         nestNextEgg()
         while let egg = nestedEgg, let nestedAt = egg.nestedAtCheckIn, let species = egg.species,
@@ -186,6 +228,58 @@ public struct WanderState: Hashable, Sendable {
             nestNextEgg()
         }
         return events
+    }
+
+    // MARK: Forks (spec 07)
+
+    /// Her choice at the fork the pet is waiting at: down the side path, or
+    /// on along the trail. Saved steps are walked at once, so the finds they
+    /// reach are reported here.
+    public mutating func choose(at forkID: String, explore: Bool, today: LocalDate) throws -> WanderEvents {
+        let before = walk
+        guard before.waitingAt?.id == forkID else { throw Problem.notWaitingAtFork }
+        route.append(explore ? .explore(forkID: forkID) : .pass(forkID: forkID))
+        return afterRouteChange(from: before, today: today)
+    }
+
+    /// Sends the pet down a passed side path from the map. It hops to the
+    /// fork, walks the loop with saved or future steps, and hops back.
+    public mutating func revisit(_ forkID: String, today: LocalDate) throws -> WanderEvents {
+        let before = walk
+        guard before.excursion == nil else { throw Problem.onExcursion }
+        guard before.openForks.contains(where: { $0.id == forkID }) else { throw Problem.pathNotOpen }
+        route.append(.revisit(forkID: forkID, afterSteps: before.stepsUsed))
+        return afterRouteChange(from: before, today: today)
+    }
+
+    private mutating func afterRouteChange(from before: Walk, today: LocalDate) -> WanderEvents {
+        var events = WanderEvents()
+        events.newlyFound = markFinds(today: today)
+        noteWalkChanges(from: before, into: &events)
+        nestNextEgg()
+        return events
+    }
+
+    /// Marks every landmark on the walked path that isn't found yet, in walk
+    /// order; an egg joins the end of the egg queue.
+    private mutating func markFinds(today: LocalDate) -> [Landmark] {
+        var newlyFound: [Landmark] = []
+        for spot in walkedPath {
+            guard let landmark = Trail.landmark(at: spot), found[landmark.id] == nil else { continue }
+            found[landmark.id] = today
+            newlyFound.append(landmark)
+            if case .egg(let speciesID) = landmark.content, Species.with(id: speciesID) != nil,
+               !eggs.contains(where: { $0.id == landmark.id }), pet(id: landmark.id) == nil {
+                eggs.append(Egg(id: landmark.id, speciesID: speciesID))
+            }
+        }
+        return newlyFound
+    }
+
+    private func noteWalkChanges(from before: Walk, into events: inout WanderEvents) {
+        let after = walk
+        if let fork = after.waitingAt, before.waitingAt?.id != fork.id { events.reachedFork = fork }
+        if let fork = before.excursion, after.excursion?.id != fork.id { events.excursionDone = fork }
     }
 
     /// The unhatched starter takes the pet name from the journal's settings,
@@ -237,7 +331,7 @@ public struct WanderState: Hashable, Sendable {
 
 extension WanderState: Codable {
     enum CodingKeys: String, CodingKey {
-        case version, steps, found, eggs, pets, activePetID, seenVisitors, pendingHatch
+        case version, steps, found, eggs, pets, activePetID, seenVisitors, pendingHatch, route
     }
 
     public init(from decoder: Decoder) throws {
@@ -256,9 +350,16 @@ extension WanderState: Codable {
         let active = try c.decodeIfPresent(String.self, forKey: .activePetID)
         let seen = try c.decodeIfPresent([String].self, forKey: .seenVisitors) ?? []
         let pending = try c.decodeIfPresent(String.self, forKey: .pendingHatch)
+        var route = try c.decodeIfPresent([RouteChoice].self, forKey: .route) ?? []
+        if version < 2 {
+            // Before forks, the pet walked straight past them. Record those as
+            // passed, so it never jumps back, and their side paths stay open.
+            let position = Set(steps.map(\.key)).count
+            route = Trail.forks.filter { $0.mainStep < position }.map { .pass(forkID: $0.id) }
+        }
         self.init(
             steps: steps, found: found, eggs: eggs, pets: pets,
-            activePetID: active, seenVisitors: Set(seen), pendingHatch: pending
+            activePetID: active, seenVisitors: Set(seen), pendingHatch: pending, route: route
         )
     }
 
@@ -272,5 +373,6 @@ extension WanderState: Codable {
         try c.encodeIfPresent(activePetID, forKey: .activePetID)
         try c.encode(seenVisitors.sorted(), forKey: .seenVisitors)
         try c.encodeIfPresent(pendingHatch, forKey: .pendingHatch)
+        try c.encode(route, forKey: .route)
     }
 }

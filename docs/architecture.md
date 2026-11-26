@@ -324,6 +324,10 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Step** *(Wander)* | One per check-in and one per reflection, for days within 7 days of today; recorded once, never taken back. The trail position is the number of steps | `StepKey`, `StepAward`, `StepPolicy`, `position` |
 | **Trail**, **area** *(Wander)* | The fixed route (version 1, 60 steps); its stretches, each with a banner: Pond Shore, Reed Bed, Willow Grove, Mossy Woods, Mushroom Glade, Meadow | `Trail`, `Area` |
 | **Landmark** *(Wander)* | A spot on the trail at a given step, holding an egg, a decoration, a coin pouch, a visitor or just scenery | `Landmark`, `LandmarkContent` |
+| **Fork**, **side path** *(Wander)* | A spot on the main trail where a short loop leaves and comes back; the loop, with its own landmarks, whose last step returns the pet | `Fork`, `SidePath`, `Trail.forks` |
+| **Route**, **walk** *(Wander)* | Her choices at forks and revisits, append-only; where her steps took the pet along it, derived by replay, never stored | `RouteChoice`, `Walk`, `RoutePolicy`, `walk` |
+| **Waiting**, **saved steps** *(Wander)* | The pet stands at a fork until she picks a way; steps earned meanwhile are kept for whichever way she picks | `waitingAt`, `savedSteps`, `choose(at:explore:)` |
+| **Excursion**, **revisit** *(Wander)* | A side path being walked; sending the pet down a passed one later from the map | `excursion`, `openForks`, `revisit(_:)` |
 | **Find** *(Wander)* | Reaching a landmark: it's marked found that day, never un-found, and announced once on a find card | `found`, `foundLandmarks`, `FindCard` |
 | **Egg**, **nest**, **basket** *(Wander)* | An egg from a landmark (or the starter); the nest holds one egg at a time and counts its check-ins; the others wait in the basket in the order found | `Egg`, `nestedEgg`, `basket` |
 | **Hatch** *(Wander)* | The nested egg becomes a pet once enough check-ins pass (the starter after 1, others after 3); she names it in the hatch moment | `hatchAfterCheckIns`, `pendingHatch`, `HatchView` |

@@ -24,6 +24,17 @@ enum SpriteLibrary {
         return image
     }
 
+    /// A rectangle of a sprite, in the PNG's own pixels (4 per art pixel): the
+    /// immersive scene borrows a treeline and a ground band from existing art.
+    static func image(_ path: String, crop: CGRect) -> UIImage? {
+        let key = "\(path)#\(crop.minX),\(crop.minY),\(crop.width),\(crop.height)"
+        if let cached = images[key] { return cached }
+        guard let base = image(path)?.cgImage, let piece = base.cropping(to: crop) else { return nil }
+        let image = UIImage(cgImage: piece)
+        images[key] = image
+        return image
+    }
+
     /// The frames of a horizontal strip in Animations/, left to right.
     static func frames(of animation: SpriteAnimation) -> [CGImage] {
         if let cached = strips[animation.strip] { return cached }

@@ -32,6 +32,23 @@ enum CampLayout {
     /// A decoration's drawn size; the willow arch is the one showpiece drawn larger.
     static func size(for itemID: String) -> CGFloat { itemID == "willow-arch" ? 0.26 : 0.16 }
 
+    /// How big things are drawn relative to the pond square.
+    struct Scale: Equatable {
+        var item: CGFloat
+        var showpiece: CGFloat
+        var pet: CGFloat
+        var nest: CGFloat
+        var slotTarget: CGFloat
+
+        func size(for itemID: String) -> CGFloat { itemID == "willow-arch" ? showpiece : item }
+
+        /// The camp as a framed window (before spec 06).
+        static let framed = Scale(item: 0.16, showpiece: 0.26, pet: CampLayout.petSize, nest: CampLayout.nestSize, slotTarget: CampLayout.slotTargetSize)
+        /// The camp as the full-screen world (spec 06): sprites on the world grid,
+        /// decorations at 40 of the pond's 128 art pixels, the pet at 64.
+        static let immersive = Scale(item: 40 / 128, showpiece: 56 / 128, pet: 64 / 128, nest: 40 / 128, slotTarget: 0.22)
+    }
+
     /// The quiet loop a decoration plays when motion is allowed (Assets/Sprites/README.md).
     static func animation(for itemID: String) -> SpriteAnimation? {
         let strips = [

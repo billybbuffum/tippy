@@ -3,14 +3,13 @@ import TippyModeration
 import TippyRewards
 
 /// The wooden dock along the bottom of Home (spec 06): logging on the first
-/// row, the Wander, Pets, Decorate and the shop on the second. In decorate
-/// mode it swaps to the shop, a hint and Done.
+/// row, then Pets, Camp (decorating, with the shop inside) and History. In
+/// decorate mode it swaps to the shop, a hint and Done.
 struct HomeDock: View {
     @Binding var decorating: Bool
     @Binding var placingItem: String?
     let logDrink: () -> Void
     let drinkFree: () -> Void
-    let openWander: () -> Void
     let openShop: () -> Void
 
     @Environment(JournalModel.self) private var model
@@ -40,12 +39,9 @@ struct HomeDock: View {
                     .disabled(model.isTodayLogged)
                     .accessibilityIdentifier("drink-free-button")
                 }
+                // One way to each place: the Wander opens from the signpost
+                // by the path, the shop from the coins or inside Camp.
                 HStack(spacing: 2 * u) {
-                    Button(action: openWander) {
-                        dockLabel("Wander", PixelIcon.map)
-                    }
-                    .buttonStyle(.pixel(.wood, size: 7, font: .labelBold))
-                    .accessibilityIdentifier("wander-button")
                     NavigationLink {
                         PetsView()
                     } label: {
@@ -57,17 +53,19 @@ struct HomeDock: View {
                     Button {
                         withAnimation { decorating = true }
                     } label: {
-                        dockLabel("Decor", PixelIcon.brush)
+                        dockLabel("Camp", PixelIcon.brush)
                     }
                     .buttonStyle(.pixel(.wood, size: 7, font: .labelBold))
-                    .accessibilityLabel("Decorate")
+                    .accessibilityLabel("Decorate the camp")
                     .accessibilityIdentifier("decorate-button")
-                    Button(action: openShop) {
-                        dockLabel("Shop", PixelIcon.bag)
+                    NavigationLink {
+                        HistoryView()
+                    } label: {
+                        dockLabel("History", PixelIcon.calendar)
                     }
                     .buttonStyle(.pixel(.wood, size: 7, font: .labelBold))
-                    .accessibilityLabel("Shop")
-                    .accessibilityIdentifier("dock-shop-button")
+                    .accessibilityLabel("History")
+                    .accessibilityIdentifier("history-button")
                 }
             }
         }

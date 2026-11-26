@@ -13,6 +13,7 @@ smoke-test checklist in `CLAUDE.md` apply to every spec.
 | [04 Backup bundle, polish and pilot](./04-backup-polish-pilot.md) | Backup of every context, restore preview, pilot checklist | 01, 02, 03 merged | 05 |
 | [05 Art requests](./05-art-requests.md) | Sprites for the camp, the Wander, eggs, hatching and pet moods | nothing | everything |
 | [06 Immersive pixel UI](./06-immersive-pixel-ui.md) | Full-screen pixel world: the pixel UI kit, the immersive Home, then parchment sheets, the continuous Wander and pixel lists | 01–04 merged | 05 §7 (art) |
+| [07 Forks and side paths on the Wander](./07-wander-forks.md) | Forks where she picks the way, side paths that loop back with their own finds, the route and walk in `TippyWander` | 03, 06 merged | 05 §7 (art); builds with spec 06's continuous Wander |
 
 ```
 main ──► 01 Rewards ──► 02 Camp ──┐

@@ -107,7 +107,8 @@ order.
    - The shop's "Buy this decoration?" is a pixel card over the shop (`confirm-buy-dialog`), not a system alert.
    - The hatch moment is a full-screen cover with a clear background: a parchment card over the dimmed Home.
 2. **The Wander:** one continuous vertical trail painting (spec 05 §7), with the path, nodes and pet on the world
-   grid, and the area name on signposts.
+   grid, and the area name on signposts. Built together with [spec 07](./07-wander-forks.md)'s forks and side
+   paths, so the painting and the map are made once with their branches.
 3. **History, Pets, Settings:** parchment lists inside a wooden frame. Settings keeps system controls where a pixel
    version would hurt accessibility (date pickers, the file picker).
 

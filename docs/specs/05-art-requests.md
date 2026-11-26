@@ -92,7 +92,9 @@ image pixels.
 |---|---|---|---|
 | `Camp/camp-tall-day.png`, `camp-tall-dusk.png`, `camp-tall-night.png` | 132 × 288 | 528 × 1152, opaque | The whole Home scene: sky at the top (about 70 px, empty enough for the HUD), a treeline, the pond camp in the middle with the spots at the spec 02 positions (relative to a 128 × 128 square starting at art y = 80, x = 2), and plain ground below (about 80 px) for the dock to sit on. The three times of day share every position. |
 | `Camp/*` decorations at scene scale | about 20–32 px of content on a 40 × 40 canvas | 160 × 160 | The 13 decorations redrawn smaller for the scene (the current 256 px ones stay for the shop and sheets). Same IDs, suffix `-scene` (`lantern-scene.png`). |
-| `Wander/trail-tall.png` | 132 × 1200 (or taller) | 528 × 4800 | One continuous vertical trail from the pond (bottom) to the meadow (top): no repeated skies, areas blending into each other, a path the map can follow. Mark landmark spots in a sidecar `trail-tall.json` (`[{"id": "shore-shell", "x": 64, "y": 1150}, …]`). |
+| `Wander/trail-tall.png` | 132 × 1200 (or taller) | 528 × 4800 | One continuous vertical trail from the pond (bottom) to the meadow (top): no repeated skies, areas blending into each other, a path the map can follow. **With four side paths** ([spec 07](./07-wander-forks.md)): at main steps 11, 19, 33 and 49 a smaller path branches off to one side and loops back to the same spot (Heron's Inlet in the reeds, The Hollow Willow, Fern Hollow, The Toadstool Ring), each with room for its signpost and 2 finds. Mark the spots in a sidecar `trail-tall.json`: `{"landmarks": [{"id": "shore-shell", "x": 64, "y": 1150}, …], "forks": [{"id": "reeds-inlet", "x": 70, "y": 900, "path": [[70, 900], [96, 890], …], "landmarks": [{"id": "inlet-pouch", "x": 100, "y": 880}, …]}]}` (art pixels, origin top-left; each fork's `path` runs from the fork round the loop and back). |
+| `Wander/signpost.png` | 24 × 24 | 96 × 96 | A wooden signpost for forks and area names; the name is drawn in code on its board. |
+| `Camp/pebble-cairn.png`, `Camp/lily-bloom.png`, `Camp/glow-mushrooms.png` (and `-scene`) | 64 (and 40) | 256 (and 160) | Side-path finds for spec 07: a little stack of pond pebbles (ground), a lily in full bloom (water), a cluster of softly glowing mushrooms (light). Find-only, never in the shop. |
 | `UI/panel-parchment.png`, `UI/panel-wood.png` | 12 × 12 | 48 × 48 | 9-slice panel frames: 4 px corners. They replace the drawn panels when present. |
 | `UI/button-*.png` | 12 × 12 | 48 × 48 | 9-slice buttons (`primary`, `leaf`, `wood`, `parchment`), each with a `-pressed` variant. |
 | `UI/dock.png` | 132 × 48 | 528 × 192 | The wooden dock, tileable horizontally. |
@@ -109,4 +111,4 @@ on the same grids.
 4. The alternates' mood poses and idle loops, and the fox at dusk.
 5. The optional loops and the dusk background.
 6. The effects and touch-ups in section 6.
-7. The immersive UI art in section 7: the tall camp scene first.
+7. The immersive UI art in section 7: the tall camp scene first, then the tall trail with its side paths.

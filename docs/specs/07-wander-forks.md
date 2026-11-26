@@ -7,7 +7,7 @@ finds, so wandering off is worth it, but nothing on the main trail is ever skipp
 
 **Decided with her** (26 November 2026):
 - **She picks** at each fork. The pet waits there, and steps earned meanwhile are saved, never lost.
-- **Side paths loop back** to the fork they left from, 3 to 6 steps long.
+- **Side paths loop back** to the fork they left from, 5 to 7 steps long (the last step is the one back).
 - **Nothing is missed forever.** A passed side path stays open, and she can explore it any time.
 
 **Depends on:** `main` (specs 03 and 06). **Builds with:** the continuous Wander (spec 06, later screen 2), so the
@@ -20,7 +20,7 @@ the art lands: on today's banner map, a side path is a short dotted loop beside 
 | Term | Meaning |
 |---|---|
 | **Fork** | A spot on the main trail where a side path leaves and comes back. It has a signpost with the side path's name. |
-| **Side path** | A short loop (3 to 6 steps) off a fork with its own landmarks. Walking it ends back at its fork. |
+| **Side path** | A short loop (5 to 7 steps) off a fork with its own landmarks. Its last step brings the pet back to its fork (or, on a revisit, to where it left from). |
 | **Route** | The choices she has made, in order: explore or pass at each fork reached, and later visits to passed paths. Append-only. |
 | **Walk** | Where the pet is, derived by replaying her steps along the route. Never stored, like the trail position today. |
 | **Waiting**, **saved steps** | The pet stands at a fork she hasn't chosen at yet; steps earned meanwhile are kept for whichever way she picks. |
@@ -35,12 +35,14 @@ The main trail keeps every area, landmark ID and step number. Forks add to it:
 ```swift
 public struct SidePath: Hashable, Sendable {
     public let name: String            // "Heron's Inlet", shown on the signpost
-    public let length: Int             // 3...6 steps, ending back at the fork
-    public let landmarks: [Landmark]   // `step` counts steps into the path, 1...length
+    public let length: Int             // steps to walk it, including the step back to the fork
+    public let hint: String            // "Something glints by the water."
+    public let landmarks: [Landmark]   // `step` counts steps into the path, 1..<length
 }
 
 public struct Fork: Identifiable, Hashable, Sendable {
     public let id: String              // stable, never renamed or reused
+    public let areaID: String
     public let mainStep: Int           // where it sits on the main trail
     public let sidePath: SidePath
 }
@@ -55,10 +57,10 @@ between main-trail landmarks, never on one.
 
 | Fork ID | Area | Main step | Side path | Length | Finds (step into the path) |
 |---|---|---|---|---|---|
-| `reeds-inlet` | Reed Bed | 11 | Heron's Inlet | 4 | `inlet-pouch` pouch of 6 coins (2), `inlet-cairn` decoration `pebble-cairn` (4) |
-| `willow-hollow` | Willow Grove | 19 | The Hollow Willow | 5 | `hollow-swing` scenery "A rope swing" (2), `hollow-bloom` decoration `lily-bloom` (5) |
-| `woods-ferns` | Mossy Woods | 33 | Fern Hollow | 6 | `ferns-pouch` pouch of 12 coins (3), `ferns-glow` decoration `glow-mushrooms` (6) |
-| `glade-ring` | Mushroom Glade | 49 | The Toadstool Ring | 4 | `ring-dance` scenery "Mushrooms in a ring" (2), `ring-pouch` pouch of 15 coins (4) |
+| `reeds-inlet` | Reed Bed | 11 | Heron's Inlet | 5 | `inlet-pouch` pouch of 6 coins (2), `inlet-cairn` decoration `pebble-cairn` (4) |
+| `willow-hollow` | Willow Grove | 19 | The Hollow Willow | 6 | `hollow-swing` scenery "A rope swing in the willow" (2), `hollow-bloom` decoration `lily-bloom` (5) |
+| `woods-ferns` | Mossy Woods | 33 | Fern Hollow | 7 | `ferns-pouch` pouch of 12 coins (3), `ferns-glow` decoration `glow-mushrooms` (6) |
+| `glade-ring` | Mushroom Glade | 49 | The Toadstool Ring | 5 | `ring-dance` scenery "Mushrooms dancing in a ring" (2), `ring-pouch` pouch of 15 coins (4) |
 
 The three decorations are new find-only catalog items in Rewards (`inShop: false`, like `firefly-jar`):
 `pebble-cairn` (ground), `lily-bloom` (water) and `glow-mushrooms` (light). The app layer grants them through the
@@ -76,7 +78,7 @@ public enum RouteChoice: Hashable, Sendable, Codable {
 
 public enum TrailSpot: Hashable, Sendable {
     case main(step: Int)
-    case side(forkID: String, step: Int)       // 1...length; at `length` it's back at the fork
+    case side(forkID: String, step: Int)       // 0..<length (0: at the fork, setting off); the last step returns to `.main`
 }
 
 public struct Walk: Hashable, Sendable {
@@ -86,11 +88,12 @@ public struct Walk: Hashable, Sendable {
     public let savedSteps: Int                 // earned but not walked yet (waiting, or the trail's end)
     public let waitingAt: Fork?
     public let excursion: Fork?                // the side path being walked, if any
+    public let openForks: [Fork]               // passed, not walked: open to revisit
 }
 
 public enum RoutePolicy {
     /// Replays `steps` along `route`, one step at a time:
-    /// - on an excursion, walk the side path; at its end, step back onto the fork and carry on;
+    /// - on an excursion, walk the side path; its last step returns to where it left from;
     /// - a `revisit` starts once exactly `afterSteps` steps have been walked;
     /// - on the main trail, at a fork with no choice yet, stop: every remaining step is saved;
     /// - at a fork with `pass`, keep going; with `explore`, start the excursion;
@@ -162,6 +165,11 @@ coordinator's find replay, like `sync`.
   The pet hops to the fork with a small puff, walks the loop with saved or future steps, and hops back.
 - **VoiceOver:** `wander-pet`'s value names the spot: "Step 9", "At the Heron's Inlet fork", or "Heron's Inlet,
   step 2 of 4".
+
+**As built** (the first version, on today's banner map): a fork takes its own row in the middle of the trail with
+its side path drawn as a dotted loop beside it and its signpost (with the Explore button) inside the loop. The
+replay follows the walked route by index, so it goes round a loop and back. Home's signpost reads "At a fork: which
+way?", "Exploring Heron's Inlet", or "3 steps to a fork" when a fork comes before the next landmark.
 
 **Demo seeds:**
 - `at-fork`: `wander-mid` with 13 steps, so the pet waits at Heron's Inlet with 2 saved steps.

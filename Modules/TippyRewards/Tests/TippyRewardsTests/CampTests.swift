@@ -18,7 +18,8 @@ final class CampTests: XCTestCase {
         let ids = CampCatalog.items.map(\.id)
         XCTAssertEqual(Set(ids).count, ids.count, "item IDs are unique")
         XCTAssertEqual(Set(CampCatalog.slots.map(\.id)).count, CampCatalog.slots.count, "slot IDs are unique")
-        XCTAssertEqual(CampCatalog.items.count, 13)
+        XCTAssertEqual(CampCatalog.items.count, 16)
+        XCTAssertEqual(CampCatalog.shopItems.count, 12, "the firefly jar and the three side-path finds are find-only")
         XCTAssertEqual(CampCatalog.shopItems.filter { $0.price <= 12 }.count, 3, "three starters")
         for item in CampCatalog.items {
             XCTAssertTrue(CampCatalog.slots.contains { $0.kind == item.kind }, "\(item.id) has somewhere to go")

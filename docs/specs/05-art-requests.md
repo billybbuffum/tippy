@@ -82,6 +82,25 @@ them when they exist and skips them when they don't.
 The dusk fox carries a warm rim light beside a small lantern. The pond-shore and reed-bed banners leave the
 route to the map's continuous path layer.
 
+## 7. Immersive UI (spec 06)
+
+The app moves to a full-screen pixel world (see [spec 06](./06-immersive-pixel-ui.md)). One world art pixel is about
+3 pt on screen, so a 132 px wide scene spans the phone. Deliver at 4× like everything else: one art pixel is 4 × 4
+image pixels.
+
+| File | Art size | PNG size | Notes |
+|---|---|---|---|
+| `Camp/camp-tall-day.png`, `camp-tall-dusk.png`, `camp-tall-night.png` | 132 × 288 | 528 × 1152, opaque | The whole Home scene: sky at the top (about 70 px, empty enough for the HUD), a treeline, the pond camp in the middle with the spots at the spec 02 positions (relative to a 128 × 128 square starting at art y = 80, x = 2), and plain ground below (about 80 px) for the dock to sit on. The three times of day share every position. |
+| `Camp/*` decorations at scene scale | about 20–32 px of content on a 40 × 40 canvas | 160 × 160 | The 13 decorations redrawn smaller for the scene (the current 256 px ones stay for the shop and sheets). Same IDs, suffix `-scene` (`lantern-scene.png`). |
+| `Wander/trail-tall.png` | 132 × 1200 (or taller) | 528 × 4800 | One continuous vertical trail from the pond (bottom) to the meadow (top): no repeated skies, areas blending into each other, a path the map can follow. Mark landmark spots in a sidecar `trail-tall.json` (`[{"id": "shore-shell", "x": 64, "y": 1150}, …]`). |
+| `UI/panel-parchment.png`, `UI/panel-wood.png` | 12 × 12 | 48 × 48 | 9-slice panel frames: 4 px corners. They replace the drawn panels when present. |
+| `UI/button-*.png` | 12 × 12 | 48 × 48 | 9-slice buttons (`primary`, `leaf`, `wood`, `parchment`), each with a `-pressed` variant. |
+| `UI/dock.png` | 132 × 48 | 528 × 192 | The wooden dock, tileable horizontally. |
+| `UI/icon-*.png` | 8 × 8 | 32 × 32 | `mug`, `leaf`, `map`, `paw`, `brush`, `bag`, `calendar`, `gear`, `coin`, `book`, plus a speech bubble 9-slice (`UI/bubble.png`, 12 × 12 with a tail). |
+
+Until these land, the app draws all of them itself, from the existing pond background and the willow-grove banner,
+on the same grids.
+
 ## Priority
 
 1. `Camp/pond-background.png` and the 8 new decorations: these unblock the camp, the core loop she cares about most.
@@ -90,3 +109,4 @@ route to the map's continuous path layer.
 4. The alternates' mood poses and idle loops, and the fox at dusk.
 5. The optional loops and the dusk background.
 6. The effects and touch-ups in section 6.
+7. The immersive UI art in section 7: the tall camp scene first.

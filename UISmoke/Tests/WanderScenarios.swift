@@ -42,7 +42,7 @@ final class WanderScenarios: SmokeScenario {
         XCTAssertEqual(element("landmark-reeds-pouch").value as? String, "locked")
         pause()
         goBack(from: "The Wander")
-        screen("home-again", app.navigationBars["Tippy"])
+        screen("home-again", element("home-screen"))
     }
 
     /// A check-in and a reflection are two steps: the pondling reaches the

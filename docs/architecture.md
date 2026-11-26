@@ -43,7 +43,7 @@ ports and the domain. The domain knows nothing outside itself.
 | **Domain** | `Modules/<Context>/Sources/<Context>/` (one Swift package per bounded context) | `Foundation`, and contexts its `Package.swift` depends on | Entities, value objects, aggregates, domain services, repository ports, codecs |
 | **Application** | `Sources/Tippy/Model/` | `Foundation`, `Observation`, contexts | `@MainActor @Observable` models (use cases + observable state), application ports (`Ports.swift`) |
 | **Adapters** | `Sources/Tippy/Adapters/` | `Foundation`, platform frameworks (`UserNotifications`, later `WidgetKit`, `HealthKit`, `CloudKit`), contexts | One port implementation per file |
-| **Presentation** | `Sources/Tippy/Views/<Feature>/` | `SwiftUI`, `UIKit` (images only), `Charts`, `UniformTypeIdentifiers`, contexts | Views, view-only helpers (`Views/Shared/`), sprite loading |
+| **Presentation** | `Sources/Tippy/Views/<Feature>/` | `SwiftUI`, `UIKit` (images only), `Charts`, `UniformTypeIdentifiers`, `CoreText` (registering the bundled fonts), contexts | Views, view-only helpers (`Views/Shared/`), the pixel UI kit (`Views/Pixel/`), sprite loading |
 | **Composition** | `Sources/Tippy/App/` | `SwiftUI`, `Foundation` | `TippyApp` (composition root), `RootView` (top-level routing and alerts) |
 | **Demo** | `Sources/Tippy/Demo/` | `Foundation`, contexts | `UISmokeMode` (seeds, fixed clock), in-memory and silent stand-in adapters |
 
@@ -130,7 +130,17 @@ goes here, with a unit test.
   - icon-only buttons get an `.accessibilityLabel`;
   - decorative views are `.accessibilityHidden(true)`;
   - text uses Dynamic Type styles (`.headline`, `.caption`), never fixed point sizes, except in drawn art like
-    `PetView`, which scales to its frame.
+    `PetView`, which scales to its frame, and pixel text (`.pixelFont`), which sits on the UI grid and switches to
+    the rounded system font at accessibility sizes.
+- **The pixel UI** ([spec 06](./specs/06-immersive-pixel-ui.md)). Home is the world, edge to edge, with no
+  navigation bar, materials or iOS cards; other screens follow it. Build it from the kit in `Views/Pixel/`, never
+  from system chrome:
+  - two grids: the **world grid** (one art pixel = screen width / 132, `PixelGrid.worldUnit`) for scenes and
+    sprites, and the **UI grid** (2 pt, `PixelGrid.uiPoint`) for panels, buttons, icons and text;
+  - `PixelPalette` for every colour, `.pixelPanel(_:)` for any panel, `.buttonStyle(.pixel(_:))` for any button,
+    `PixelIcon` for HUD icons, `.pixelFont(_:_:)` for text (sizes in UI pixels);
+  - visible pixel text may be shorter than its accessibility label (the week meter shows `6/14`; VoiceOver and
+    the smoke tests read "6.0 of 14 drinks this week").
 - **Animations** respect demo mode. Nothing repeats forever under `UISmokeMode.isActive`, because XCUITest waits for the
   app to go idle.
 
@@ -301,7 +311,11 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Back-fill window** *(Rewards)* | A day earns coins only within 7 days of the sync (`day >= today - 7`), so remembering a missed day pays but old history can't be farmed | `backfillDays` |
 | **Decoration**, **purchase**, **placement** *(Rewards)* | A catalog item; buying it (one of each, never past the balance); putting it in a spot of its kind (moving and storing are free) | `Purchase`, `buy`, `place`, `placements` |
 | **Owned**, **stored**, **grant** *(Rewards)* | Bought or found; owned but not placed; a found decoration given once per `find:<landmark>` key | `owned`, `storedItems()`, `grant` |
-| **Decorate mode** *(Rewards)* | Home with every spot outlined, to place, move or put away decorations by tapping | `PetScene` |
+| **Decorate mode** *(Rewards)* | Home with every spot outlined, to place, move or put away decorations by tapping | `HomeView`, `HomeDock` |
+| **World**, **world grid** *(UI)* | Home's full-screen scene (sky, treeline, pond camp, ground) and its grid of one art pixel = width / 132 | `WorldBackdrop`, `WorldLayout`, `SkyTime`, `PixelGrid` |
+| **HUD**, **dock**, **notice** *(UI)* | The pixel panels over the sky (nameplate, coins, week meter); the wooden shelf of buttons at the bottom; a one-time parchment panel under the HUD | `HomeHUD`, `WeekMeter`, `HomeDock`, `FindCard`, `ReminderOfferCard` |
+| **Pixel kit**, **UI grid** *(UI)* | The panels, buttons, icons, fonts and palette every pixel screen is built from, on a 2 pt grid | `PixelPanel`, `PixelButtonStyle`, `PixelIcon`, `PixelFonts`, `PixelPalette` |
+| **Speech bubble** *(UI)* | Today's status in the pet's voice ("How was today?") | `SpeechBubble`, `today-status-label` |
 | **Weekly recap** *(Rewards)* | The summary of last week, shown once after it ends (never a queue of older weeks): total against that week's goal, days, coins with the goal bonus, reflections | `WeeklyRecap`, `RecapPolicy`, `WeeklyRecapView` |
 | **Next-week idea** *(Rewards)* | Her optional "one thing to try next week", written in the recap and shown on Home that week | `nextWeekIdea`, `NextWeekIdeaCard` |
 | **The Wander** *(Wander)* | The trail her pet walks out from the pond, one step at a time | `WanderState`, `WanderModel`, `TrailMapView` |

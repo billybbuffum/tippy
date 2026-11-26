@@ -11,6 +11,7 @@ struct CampSceneView<Pet: View, Nest: View>: View {
     let decorating: Bool
     let placingKind: SlotKind?
     let onTapSlot: (CampSlot) -> Void
+    var scale: CampLayout.Scale = .framed
     @ViewBuilder let pet: () -> Pet
     @ViewBuilder let nest: () -> Nest
 
@@ -24,10 +25,10 @@ struct CampSceneView<Pet: View, Nest: View>: View {
                 background(width)
                 ForEach(CampLayout.slotsBehindPet) { slot in decoration(in: slot, width) }
                 nest()
-                    .frame(width: CampLayout.nestSize * width, height: CampLayout.nestSize * width)
+                    .frame(width: scale.nest * width, height: scale.nest * width)
                     .position(x: CampLayout.nest.x * width, y: CampLayout.nest.y * width)
                 pet()
-                    .frame(width: CampLayout.petSize * width, height: CampLayout.petSize * width)
+                    .frame(width: scale.pet * width, height: scale.pet * width)
                     .position(x: CampLayout.pet.x * width, y: CampLayout.pet.y * width)
                 ForEach(CampLayout.slotsInFrontOfPet) { slot in decoration(in: slot, width) }
                 if decorating {
@@ -36,7 +37,7 @@ struct CampSceneView<Pet: View, Nest: View>: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .clipShape(RoundedRectangle(cornerRadius: scale == .framed ? 24 : 0))
     }
 
     @ViewBuilder
@@ -63,7 +64,7 @@ struct CampSceneView<Pet: View, Nest: View>: View {
     private func decoration(in slot: CampSlot, _ width: CGFloat) -> some View {
         if let item = rewards.item(in: slot.id) {
             let point = CampLayout.point(for: slot.id)
-            let size = CampLayout.size(for: item.id) * width
+            let size = scale.size(for: item.id) * width
             DecorationSprite(item: item, animates: MotionAllowed(reduceMotion: reduceMotion).value)
                 .frame(width: size, height: size)
                 .accessibilityElement(children: .ignore)
@@ -75,7 +76,7 @@ struct CampSceneView<Pet: View, Nest: View>: View {
 
     private func target(for slot: CampSlot, _ width: CGFloat) -> some View {
         let point = CampLayout.point(for: slot.id)
-        let size = CampLayout.slotTargetSize * width
+        let size = scale.slotTarget * width
         let fits = placingKind == nil || placingKind == slot.kind
         let occupant = rewards.item(in: slot.id)
         return Button {

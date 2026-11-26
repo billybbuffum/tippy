@@ -25,9 +25,10 @@ Modules/TippyWander/               Wander context (domain): steps, the trail, eg
 Sources/Tippy/App/                 composition root (TippyApp, AppModels) and RootView
 Sources/Tippy/Model/               application layer: JournalModel, RewardsModel, WanderModel, ports
 Sources/Tippy/Adapters/            port implementations (file stores, notifications)
-Sources/Tippy/Views/<Feature>/     SwiftUI, one folder per feature
+Sources/Tippy/Views/<Feature>/     SwiftUI, one folder per feature; Views/Pixel/ is the pixel UI kit (spec 06)
 Sources/Tippy/Demo/                UI smoke test demo mode: seeds, fixed clock, stand-in adapters
 Sources/Tippy/Resources/Sprites/   the sprites the app ships, copied from Assets/Sprites by scripts/sync-sprites.py
+Sources/Tippy/Resources/Fonts/     the pixel fonts (Pixelify Sans, Silkscreen) with their SIL Open Font License
 Assets/Sprites/                    source pixel art (see its README)
 scripts/resign.sh                  re-signs the CI-built IPA with a real development identity
 scripts/merge-entitlements.py      the entitlements each bundle is signed with

@@ -4,6 +4,10 @@ import SwiftUI
 struct TippyApp: App {
     @State private var models = TippyApp.makeModels()
 
+    init() {
+        PixelFonts.register()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

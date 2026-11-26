@@ -13,31 +13,28 @@ struct NextWeekIdeaCard: View {
         let lastWeek = model.currentWeek.previous
         if let idea = rewards.nextWeekIdea(for: lastWeek), hiddenWeek != lastWeek.start.description {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "lightbulb")
-                    .foregroundStyle(.yellow)
-                    .accessibilityHidden(true)
+                PixelIcon.bulb
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Your idea for this week")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text("YOUR IDEA FOR THIS WEEK")
+                        .pixelFont(.labelBold, 8)
+                        .foregroundStyle(PixelPalette.tealDark)
                     Text(idea)
+                        .pixelFont(.body, 10)
                         .accessibilityIdentifier("recap-idea-label")
                 }
                 Spacer(minLength: 0)
                 Button {
                     hiddenWeek = lastWeek.start.description
                 } label: {
-                    Image(systemName: "xmark")
-                        .font(.footnote.weight(.semibold))
+                    PixelIcon.close
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                .buttonStyle(.pixel(.parchment, fill: false))
                 .accessibilityLabel("Hide this idea")
                 .accessibilityIdentifier("recap-idea-hide-button")
             }
-            .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .foregroundStyle(PixelPalette.plum)
+            .pixelPanel(.parchment)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("recap-idea-card")
         }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The coin balance in Home's toolbar. VoiceOver reads it as "120 coins".
+/// The coin balance on Home's HUD, as a pixel panel. VoiceOver reads it as "120 coins".
 /// Tapping it opens the shop.
 ///
 /// It's a container rather than a `Button`, so that both identifiers reach the
@@ -11,16 +11,15 @@ struct CoinBadge: View {
     var openShop: () -> Void = {}
 
     var body: some View {
-        HStack(spacing: 4) {
-            CoinIcon()
-                .frame(width: 22, height: 22)
+        HStack(spacing: 3 * PixelGrid.uiPoint) {
+            PixelIcon.coin
             Text("\(balance)")
-                .font(.subheadline.weight(.semibold))
-                .monospacedDigit()
+                .pixelFont(.body, 12)
+                .foregroundStyle(PixelPalette.plum)
                 .accessibilityLabel(balance.coinsText)
                 .accessibilityIdentifier("coin-balance-label")
         }
-        .padding(.horizontal, 4)
+        .pixelPanel(.parchment)
         .contentShape(Rectangle())
         .onTapGesture(perform: openShop)
         .accessibilityElement(children: .contain)

@@ -5,7 +5,7 @@ final class HistoryScenarios: SmokeScenario {
     /// The week's days: drinks Monday and Tuesday, Wednesday drink-free with a reflection.
     func testHistory() {
         launch(seed: .midWeek)
-        screen("home", app.navigationBars["Tippy"])
+        screen("home", element("home-screen"))
         element("history-button").tap()
         screen("history", app.navigationBars["History"])
         XCTAssertTrue(element("history-drink-free-row").exists)
@@ -13,13 +13,13 @@ final class HistoryScenarios: SmokeScenario {
         XCTAssertTrue(element("history-reflection-row").exists)
         pause()
         goBack(from: "History")
-        screen("home-again", app.navigationBars["Tippy"])
+        screen("home-again", element("home-screen"))
     }
 
     /// Tap a drink to edit it: change it to wine.
     func testEditDrink() {
         launch(seed: .midWeek)
-        screen("home", app.navigationBars["Tippy"])
+        screen("home", element("home-screen"))
         element("history-button").tap()
         screen("history", app.navigationBars["History"])
         element("history-entry-row").tap()
@@ -33,7 +33,7 @@ final class HistoryScenarios: SmokeScenario {
     /// Deleting a day's only drink asks what the day becomes: drink-free.
     func testDeleteLastDrink() {
         launch(seed: .oneDrink)
-        screen("home", app.navigationBars["Tippy"])
+        screen("home", element("home-screen"))
         element("history-button").tap()
         screen("history", app.navigationBars["History"])
         element("history-entry-row").tap()
@@ -47,7 +47,7 @@ final class HistoryScenarios: SmokeScenario {
     /// Mark a day drink-free from History.
     func testBackfillDrinkFree() {
         launch(seed: .default)
-        screen("home", app.navigationBars["Tippy"])
+        screen("home", element("home-screen"))
         element("history-button").tap()
         screen("history-empty", app.navigationBars["History"])
         element("add-drink-free-day-button").tap()

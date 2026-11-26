@@ -14,20 +14,18 @@ struct FindCard: View {
                 .frame(width: 44, height: 44)
                 .accessibilityHidden(true)
             Text(landmark.findSentence(petName: petName))
-                .font(.subheadline.weight(.semibold))
+                .pixelFont(.body, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("find-card-label")
             Button(action: dismiss) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+                PixelIcon.close
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.pixel(.parchment, fill: false))
             .accessibilityLabel("Dismiss")
             .accessibilityIdentifier("find-card-dismiss-button")
         }
-        .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .foregroundStyle(PixelPalette.plum)
+        .pixelPanel(.parchment)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("find-card")
     }

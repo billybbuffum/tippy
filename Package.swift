@@ -43,6 +43,8 @@ let package = Package(
             // which xtool packs into the app; code reads them via Bundle.module.
             resources: [
                 .copy("Resources/Sprites"),
+                // Pixelify Sans and Silkscreen (SIL Open Font License), registered at launch (spec 06).
+                .copy("Resources/Fonts"),
             ]
         ),
     ],

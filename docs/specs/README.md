@@ -12,6 +12,7 @@ smoke-test checklist in `CLAUDE.md` apply to every spec.
 | [03 The Wander, eggs and pets](./03-wander-eggs-pets.md) | `TippyWander` package, trail map, nest and hatching, pet collection | main (core loop) | 01, 02, 05 |
 | [04 Backup bundle, polish and pilot](./04-backup-polish-pilot.md) | Backup of every context, restore preview, pilot checklist | 01, 02, 03 merged | 05 |
 | [05 Art requests](./05-art-requests.md) | Sprites for the camp, the Wander, eggs, hatching and pet moods | nothing | everything |
+| [06 Immersive pixel UI](./06-immersive-pixel-ui.md) | Full-screen pixel world: the pixel UI kit, the immersive Home, then parchment sheets, the continuous Wander and pixel lists | 01–04 merged | 05 §7 (art) |
 
 ```
 main ──► 01 Rewards ──► 02 Camp ──┐

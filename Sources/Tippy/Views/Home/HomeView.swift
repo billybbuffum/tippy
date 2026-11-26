@@ -51,7 +51,6 @@ struct HomeView: View {
                     placingItem: $placingItem,
                     logDrink: { showingLog = true },
                     drinkFree: markDrinkFree,
-                    openWander: { showingWander = true },
                     openShop: { showingShop = true }
                 )
             }
@@ -151,16 +150,22 @@ struct HomeView: View {
         .frame(width: layout.size.width, height: layout.size.height, alignment: .topLeading)
     }
 
-    /// The signpost to the Wander: how far the next landmark is.
+    /// The signpost by the path: the one way into the Wander, saying where it
+    /// leads and how far the next landmark is.
     private var signpost: some View {
         Button { showingWander = true } label: {
             HStack(spacing: 3 * PixelGrid.uiPoint) {
                 PixelIcon.flag
-                Text(wander.state.nextLandmarkCaption)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("WANDER  →")
+                        .pixelFont(.labelBold, 7)
+                    Text(wander.state.nextLandmarkCaption)
+                }
             }
         }
         .buttonStyle(.pixel(.wood, size: 10, fill: false))
         .accessibilityLabel(wander.state.nextLandmarkCaption)
+        .accessibilityHint("Opens the Wander")
         .accessibilityIdentifier("wander-next-label")
     }
 

@@ -21,7 +21,10 @@ struct PixelStepper: View {
             Button {
                 value = max(range.lowerBound, value - step)
             } label: {
-                PixelIcon.minus.frame(height: 7 * u)
+                // Padded to a comfortable target (about 38 × 34 pt).
+                PixelIcon.minus
+                    .padding(.horizontal, 4 * u)
+                    .padding(.vertical, 3 * u)
             }
             .buttonStyle(.pixel(.paper, fill: false))
             .disabled(value <= range.lowerBound)
@@ -29,7 +32,10 @@ struct PixelStepper: View {
             Button {
                 value = min(range.upperBound, value + step)
             } label: {
-                PixelIcon.plus.frame(height: 7 * u)
+                // Padded to a comfortable target (about 38 × 34 pt).
+                PixelIcon.plus
+                    .padding(.horizontal, 4 * u)
+                    .padding(.vertical, 3 * u)
             }
             .buttonStyle(.pixel(.paper, fill: false))
             .disabled(value >= range.upperBound)

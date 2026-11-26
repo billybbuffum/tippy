@@ -3,8 +3,7 @@ import TippyModeration
 import TippyWander
 
 /// Home's heads-up display, over the sky (spec 06): the pet's nameplate and
-/// mood, the coin badge and the History and Settings buttons, then the week
-/// meter. Numbers stay neutral; the pet's bubble carries the feelings.
+/// mood, the coin badge and Settings, then the week meter. Numbers stay neutral; the pet's bubble carries the feelings.
 struct HomeHUD: View {
     let openShop: () -> Void
     let openSettings: () -> Void
@@ -20,14 +19,6 @@ struct HomeHUD: View {
                 nameplate
                 Spacer(minLength: 0)
                 CoinBadge(balance: rewards.balance, openShop: openShop)
-                NavigationLink {
-                    HistoryView()
-                } label: {
-                    PixelIcon.calendar
-                }
-                .buttonStyle(.pixel(.parchment, fill: false))
-                .accessibilityLabel("History")
-                .accessibilityIdentifier("history-button")
                 Button(action: openSettings) {
                     PixelIcon.gear
                 }

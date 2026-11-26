@@ -52,15 +52,15 @@ screen works with placeholders until that art lands.
 ```
 ┌──────────────────────────────┐  the world fills everything, ignoring safe areas
 │ sky (bands, stars, moon/sun) │
-│ [Sprout · THRIVING]  [◎ 120] │  HUD: nameplate + mood, coins; [📅][⚙] icon buttons
+│ [Sprout · THRIVING] [◎ 120][⚙]│  HUD: nameplate + mood, coins (opens the shop), Settings
 │ [THIS WEEK ▮▮▮▮▮▯▯ 6/14]    │  week meter: drink-free days and days logged under it
 │ treeline                     │
 │ pond camp: decorations, pet, │  CampSceneView at scene scale, no rounded corners
 │   nest; speech bubble        │
-│ [⚑ 3 steps to the Reed Bed]  │  signpost (wander-next-label), opens the Wander
+│ [⚑ WANDER → 3 steps to …]    │  signpost (wander-next-label): the one way into the Wander
 ├──────────────────────────────┤
 │ [ Log a drink ] [ None ]     │  the dock
-│ [WANDER][PETS][DECOR][SHOP]  │
+│ [PETS]  [CAMP]  [HISTORY]    │
 └──────────────────────────────┘
 ```
 
@@ -77,8 +77,10 @@ order.
 
 **The dock:**
 - **First row:** `log-drink-button` (primary) and `drink-free-button` (leaf).
-- **Second row:** `wander-button`, `pets-button`, `decorate-button`, and a shop button. The shop opens through the
-  coin badge too.
+- **Second row:** `pets-button`, `decorate-button` (labelled Camp) and `history-button`, each a word under its icon.
+- **One way to each place** (changed after she tried it: eleven controls with duplicates felt cluttered). The
+  Wander opens only from the signpost, the shop from the coin badge or inside Camp, and History from the dock. There
+  is no separate Wander or Shop button on the dock, and no icon-only History button in the HUD.
 - **In decorate mode** the dock swaps to `shop-button`, the hint, and `decorate-done-button`.
 
 **Identifiers kept:**
@@ -87,7 +89,7 @@ order.
 - `week-total-label`, `drink-free-count-label`, `days-logged-label`
 - `coin-badge-button`, `coin-balance-label`
 - `history-button`, `settings-button`
-- `wander-next-label`, `wander-button`, `pets-button`
+- `wander-next-label`, `pets-button` (`wander-button` is gone: the signpost opens the Wander)
 - `nest-view`, `nest-countdown-label`
 - `camp-scene`, every `camp-slot-*` and `camp-item-*`
 - `find-card`, `reminder-offer-card`, `recap-idea-label`
@@ -111,6 +113,11 @@ order.
    paths, so the painting and the map are made once with their branches.
 3. **History, Pets, Settings:** parchment lists inside a wooden frame. Settings keeps system controls where a pixel
    version would hurt accessibility (date pickers, the file picker).
+   - Pushed screens (History, Pets) use `.pixelScreen(_:identifier:)`: wooden planks, the title on a ribbon, and the
+     content in a parchment frame. They keep the system back button, because hiding the navigation bar would also
+     lose the swipe back. Markers: `history-screen`, `pets-screen`.
+   - Settings, the restore preview and History's drink-free day are parchment sheets: `settings-sheet`,
+     `restore-preview`, `drink-free-day-sheet`. Mark a day drink-free moves from the toolbar into the screen.
 
 ## Acceptance (Home)
 

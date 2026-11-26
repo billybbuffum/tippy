@@ -142,8 +142,14 @@ extension Landmark {
     func findSentence(petName: String) -> String {
         let what = name.prefix(1).lowercased() + name.dropFirst()
         switch content {
-        case .egg, .decoration, .pouch:
-            return "\(petName) found \(what)!"
+        // Say what she got and where it went: a pouch's coins were added
+        // with the check-in that reached it, long before the map shows it.
+        case .pouch(let coins):
+            return "\(petName) found \(what), with \(coins.coinsText) inside! They're in your coins."
+        case .decoration:
+            return "\(petName) found \(what)! It's in storage: place it with Decor."
+        case .egg:
+            return "\(petName) found \(what)! It's waiting under Pets."
         case .visitor:
             return "\(petName) met \(what)!"
         case .scenery:

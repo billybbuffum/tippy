@@ -57,6 +57,7 @@ final class WanderScenarios: SmokeScenario {
         element("reflection-save-button").tap()
         screen("found", element("find-card"))
         XCTAssertTrue(element("find-card-label").label.contains("seashell"), element("find-card-label").label)
+        XCTAssertTrue(element("find-card-label").label.contains("storage"), "a find says where it went")
         XCTAssertEqual(element("wander-next-label").label, "2 steps to the next landmark")
         element("find-card-dismiss-button").tap()
         XCTAssertTrue(element("find-card").waitForNonExistence(timeout: 5), "the card goes once dismissed")

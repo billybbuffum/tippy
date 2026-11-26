@@ -17,6 +17,14 @@ struct FindCard: View {
                 .pixelFont(.body, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("find-card-label")
+            if case .pouch(let coins) = landmark.content {
+                HStack(spacing: 2 * PixelGrid.uiPoint) {
+                    PixelIcon.coin
+                    Text("+\(coins)")
+                        .pixelFont(.body, 11)
+                }
+                .accessibilityHidden(true)
+            }
             Button(action: dismiss) {
                 PixelIcon.close
             }

@@ -15,6 +15,9 @@ struct RootView: View {
                 OnboardingView()
             }
         }
+        // Always light: the pixel palette is light, and system controls drawn
+        // for dark mode vanish on parchment (also set in Info.plist).
+        .preferredColorScheme(.light)
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { model.refresh() }
         }

@@ -10,6 +10,11 @@
     <string>0.2.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <!-- The pixel world has its own light palette (spec 06). In dark mode the
+         system pieces on it (the calendar, pickers, keyboard) drew near-white
+         text on parchment, so the app always uses the light appearance. -->
+    <key>UIUserInterfaceStyle</key>
+    <string>Light</string>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>

@@ -34,6 +34,9 @@ screen works with placeholders until that art lands.
    `home-screen` instead.
 6. **Motion stays gentle.** Stars twinkle, the pet idles and decorations loop only when `MotionAllowed`. Under
    Reduce Motion and in demo mode everything is still.
+7. **Always light.** The app sets `UIUserInterfaceStyle` to Light (and `.preferredColorScheme(.light)`), because
+   system controls kept on the pixel screens (calendars, pickers, the keyboard) draw near-white text in dark mode,
+   which vanishes on parchment. Found on her phone: the drink-free day calendar showed only today.
 
 ## Pixel UI kit (`Sources/Tippy/Views/Pixel/`)
 

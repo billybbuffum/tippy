@@ -26,93 +26,113 @@ struct LogDrinkView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            if let day = reflectingOn {
-                ReflectionView(day: day) { dismiss() }
-            } else {
-                form
-            }
+        if let day = reflectingOn {
+            ReflectionView(day: day) { dismiss() }
+        } else {
+            form
         }
     }
 
     private var form: some View {
-        Form {
-            Section("Drink") {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 10)], spacing: 10) {
-                    ForEach(DrinkKind.allCases, id: \.self) { kind in
-                        Button {
-                            choose(kind)
-                        } label: {
-                            VStack(spacing: 4) {
-                                DrinkIcon(kind: kind).frame(height: 32)
-                                Text(kind.displayName).font(.caption)
+        let u = PixelGrid.uiPoint
+        return ParchmentSheet(
+            title: editing == nil ? "Log a drink" : "Edit drink",
+            identifier: editing == nil ? "log-drink-sheet" : "edit-drink-sheet"
+        ) {
+            Button("Cancel") { dismiss() }
+                .buttonStyle(.pixel(.paper, size: 10, fill: false))
+                .accessibilityIdentifier("cancel-drink-button")
+        } trailing: {
+            Button("Save") { save() }
+                .buttonStyle(.pixel(.teal, size: 10, fill: false))
+                .disabled(draft.entryPreview == nil)
+                .accessibilityIdentifier("save-drink-button")
+        } content: {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6 * u) {
+                    PixelSection(title: "Drink") {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 3 * u)], spacing: 3 * u) {
+                            ForEach(DrinkKind.allCases, id: \.self) { kind in
+                                Button {
+                                    choose(kind)
+                                } label: {
+                                    VStack(spacing: 2 * u) {
+                                        DrinkIcon(kind: kind).frame(height: 32)
+                                        Text(kind.displayName)
+                                    }
+                                }
+                                .buttonStyle(.pixel(kind == draft.kind ? .chosen : .paper, size: 9))
+                                .accessibilityAddTraits(kind == draft.kind ? .isSelected : [])
+                                .accessibilityIdentifier("drink-kind-\(kind.rawValue)")
                             }
-                            .frame(maxWidth: .infinity, minHeight: 60)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(kind == draft.kind ? Color.accentColor : Color.secondary)
-                        .accessibilityIdentifier("drink-kind-\(kind.rawValue)")
+                    }
+                    PixelSection(title: "Size and strength") {
+                        PixelSegmented(options: VolumeUnit.allCases, selection: unitBinding) { $0.shortName }
+                            .accessibilityIdentifier("drink-unit-picker")
+                        PixelStepper(
+                            name: "Amount",
+                            text: "\(String(format: draft.unit == .fluidOunce ? "%.1f" : "%.0f", draft.amount)) \(draft.unit.shortName)",
+                            value: $draft.amount,
+                            range: draft.unit.amountRange,
+                            step: draft.unit.step
+                        )
+                        .accessibilityIdentifier("drink-volume-stepper")
+                        PixelStepper(
+                            name: "Alcohol",
+                            text: String(format: "%.1f%% alcohol", draft.abvPercent),
+                            value: $draft.abvPercent,
+                            range: 0...80,
+                            step: 0.5
+                        )
+                        .accessibilityIdentifier("drink-abv-stepper")
+                        Toggle("Count it differently", isOn: overrideBinding)
+                            .toggleStyle(.pixel)
+                            .accessibilityIdentifier("drink-override-toggle")
+                        if let override = draft.standardDrinksOverride {
+                            PixelStepper(
+                                name: "Standard drinks",
+                                text: "Counts as \(override.drinksText) drinks",
+                                value: overrideValue,
+                                range: 0...20,
+                                step: 0.5
+                            )
+                            .accessibilityIdentifier("drink-override-stepper")
+                        }
+                        HStack {
+                            Text("Standard drinks")
+                                .pixelFont(.body, 11)
+                            Spacer()
+                            Text((draft.entryPreview?.standardDrinks ?? 0).drinksText)
+                                .pixelFont(.body, 13)
+                                .foregroundStyle(PixelPalette.tealDark)
+                                .accessibilityIdentifier("drink-standard-label")
+                        }
+                    }
+                    PixelSection(
+                        title: "Day",
+                        footer: "A US standard drink is 14 g of alcohol: about a 12 oz beer, a 5 oz glass of wine or a 1.5 oz shot."
+                    ) {
+                        DatePicker("Day", selection: dayBinding, in: ...model.now, displayedComponents: .date)
+                            .pixelFont(.body, 11)
+                            .accessibilityIdentifier("drink-day-picker")
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.horizontal, 6 * u)
+                .padding(.bottom, 8 * u)
             }
-            Section("Size and strength") {
-                Picker("Unit", selection: unitBinding) {
-                    ForEach(VolumeUnit.allCases, id: \.self) { Text($0.shortName).tag($0) }
+            .safeAreaInset(edge: .bottom) {
+                if let editing {
+                    // Always in view, however far the form scrolls.
+                    Button("Delete drink") { delete(editing) }
+                        .buttonStyle(.pixel(.wood, size: 11))
+                        .accessibilityIdentifier("delete-drink-button")
+                        .padding(.horizontal, 6 * u)
+                        .padding(.vertical, 3 * u)
                 }
-                .pickerStyle(.segmented)
-                .accessibilityIdentifier("drink-unit-picker")
-                Stepper(value: $draft.amount, in: draft.unit.amountRange, step: draft.unit.step) {
-                    Text("\(draft.amount, specifier: draft.unit == .fluidOunce ? "%.1f" : "%.0f") \(draft.unit.shortName)")
-                }
-                .accessibilityIdentifier("drink-volume-stepper")
-                Stepper(value: $draft.abvPercent, in: 0...80, step: 0.5) {
-                    Text("\(draft.abvPercent, specifier: "%.1f")% alcohol")
-                }
-                .accessibilityIdentifier("drink-abv-stepper")
-                Toggle("Count it differently", isOn: overrideBinding)
-                    .accessibilityIdentifier("drink-override-toggle")
-                if let override = draft.standardDrinksOverride {
-                    Stepper(value: overrideValue, in: 0...20, step: 0.5) {
-                        Text("Counts as \(override.drinksText) drinks")
-                    }
-                    .accessibilityIdentifier("drink-override-stepper")
-                }
-                LabeledContent("Standard drinks") {
-                    Text((draft.entryPreview?.standardDrinks ?? 0).drinksText)
-                        .monospacedDigit()
-                        .accessibilityIdentifier("drink-standard-label")
-                }
-            }
-            Section {
-                DatePicker("Day", selection: dayBinding, in: ...model.now, displayedComponents: .date)
-                    .accessibilityIdentifier("drink-day-picker")
-            } footer: {
-                Text("A US standard drink is 14 g of alcohol: about a 12 oz beer, a 5 oz glass of wine or a 1.5 oz shot.")
             }
         }
         .emptyDayDialog(for: $deletingLast) { dismiss() }
-        .navigationTitle(editing == nil ? "Log a drink" : "Edit drink")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
-                    .accessibilityIdentifier("cancel-drink-button")
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") { save() }
-                    .disabled(draft.entryPreview == nil)
-                    .accessibilityIdentifier("save-drink-button")
-            }
-            if let editing {
-                // Always in view, however far the form scrolls.
-                ToolbarItem(placement: .bottomBar) {
-                    Button("Delete drink", role: .destructive) { delete(editing) }
-                        .tint(.red)
-                        .accessibilityIdentifier("delete-drink-button")
-                }
-            }
-        }
     }
 
     private var day: LocalDate {

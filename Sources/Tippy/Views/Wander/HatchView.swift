@@ -29,37 +29,33 @@ struct HatchView: View {
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer(minLength: 24)
-            art
-                .frame(width: 220, height: 220)
-            Text(petShown ? "Welcome, little \(species.name.lowercased())!" : "Something's hatching…")
-                .font(.title2.bold())
-                .multilineTextAlignment(.center)
-                .accessibilityIdentifier("hatch-title-label")
-            Text("What would you like to call it?")
-                .foregroundStyle(.secondary)
-            TextField(species.name, text: $name)
-                .textFieldStyle(.roundedBorder)
-                .multilineTextAlignment(.center)
-                .font(.title3)
-                .submitLabel(.done)
-                .onSubmit(finish)
-                .accessibilityIdentifier("hatch-name-field")
-                .padding(.horizontal, 40)
-            Button(action: finish) {
-                Text("Done").frame(maxWidth: .infinity)
+        let u = PixelGrid.uiPoint
+        DimmedSceneCard {
+            VStack(spacing: 5 * u) {
+                TitleRibbon(title: "Hatching!", identifier: "hatch-ribbon-label")
+                art
+                    .frame(width: 200, height: 200)
+                Text(petShown ? "Welcome, little \(species.name.lowercased())!" : "Something's hatching…")
+                    .pixelFont(.body, 14)
+                    .multilineTextAlignment(.center)
+                    .accessibilityIdentifier("hatch-title-label")
+                Text("What would you like to call it?")
+                    .pixelFont(.body, 10)
+                    .foregroundStyle(PixelPalette.plum.opacity(0.8))
+                TextField(species.name, text: $name)
+                    .multilineTextAlignment(.center)
+                    .submitLabel(.done)
+                    .onSubmit(finish)
+                    .accessibilityIdentifier("hatch-name-field")
+                    .pixelField()
+                Button("Done", action: finish)
+                    .buttonStyle(.pixel(.teal))
+                    .disabled(trimmedName.isEmpty)
+                    .accessibilityIdentifier("hatch-done-button")
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(trimmedName.isEmpty)
-            .accessibilityIdentifier("hatch-done-button")
-            .padding(.horizontal, 40)
-            Spacer()
+            .foregroundStyle(PixelPalette.plum)
+            .padding(.vertical, 2 * u)
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.teal.opacity(0.12).ignoresSafeArea())
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("hatch-view")
         .interactiveDismissDisabled()

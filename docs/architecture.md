@@ -316,6 +316,7 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **HUD**, **dock**, **notice** *(UI)* | The pixel panels over the sky (nameplate, coins, week meter); the wooden shelf of buttons at the bottom; a one-time parchment panel under the HUD | `HomeHUD`, `WeekMeter`, `HomeDock`, `FindCard`, `ReminderOfferCard` |
 | **Pixel kit**, **UI grid** *(UI)* | The panels, buttons, icons, fonts and palette every pixel screen is built from, on a 2 pt grid | `PixelPanel`, `PixelButtonStyle`, `PixelIcon`, `PixelFonts`, `PixelPalette` |
 | **Speech bubble** *(UI)* | Today's status in the pet's voice ("How was today?") | `SpeechBubble`, `today-status-label` |
+| **Parchment sheet** *(UI)* | A sheet drawn as paper with a title ribbon and pixel buttons instead of a navigation bar, its form in paper sections | `ParchmentSheet`, `TitleRibbon`, `PixelSection`, `PixelStepper`, `PixelSegmented`, `DimmedSceneCard` |
 | **Weekly recap** *(Rewards)* | The summary of last week, shown once after it ends (never a queue of older weeks): total against that week's goal, days, coins with the goal bonus, reflections | `WeeklyRecap`, `RecapPolicy`, `WeeklyRecapView` |
 | **Next-week idea** *(Rewards)* | Her optional "one thing to try next week", written in the recap and shown on Home that week | `nextWeekIdea`, `NextWeekIdeaCard` |
 | **The Wander** *(Wander)* | The trail her pet walks out from the pond, one step at a time | `WanderState`, `WanderModel`, `TrailMapView` |

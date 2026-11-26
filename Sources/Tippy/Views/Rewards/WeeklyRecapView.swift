@@ -17,11 +17,21 @@ struct WeeklyRecapView: View {
 
     var body: some View {
         let summary = model.journal.summary(of: week, today: model.today)
-        NavigationStack {
+        let u = PixelGrid.uiPoint
+        ParchmentSheet(title: "Weekly recap", identifier: "recap-sheet") {
+            EmptyView()
+        } trailing: {
+            Button("Done") {
+                rewards.markRecapSeen(week, nextWeekIdea: idea)
+                dismiss()
+            }
+            .buttonStyle(.pixel(.teal, size: 10, fill: false))
+            .accessibilityIdentifier("recap-done-button")
+        } content: {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6 * u) {
                     Text("Your week, \(week.rangeText(in: model.calendar))")
-                        .font(.title2.bold())
+                        .pixelFont(.body, 14)
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("recap-title-label")
                     PetView(mood: summary.metGoal ? .thriving : .happy, species: wander.activeSpecies)
@@ -29,29 +39,17 @@ struct WeeklyRecapView: View {
                         .frame(maxWidth: .infinity)
                     RecapNumbers(summary: summary, coins: rewards.coinsEarned(in: week), bonus: rewards.goalBonus(for: week))
                     RecapReflections(week: week)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("One thing to try next week")
-                            .font(.headline)
+                    PixelSection(title: "One thing to try next week") {
                         TextField("Optional", text: $idea, axis: .vertical)
                             .lineLimit(2...4)
-                            .textFieldStyle(.roundedBorder)
                             .accessibilityIdentifier("recap-idea-field")
+                            .pixelField()
                     }
                 }
-                .padding()
+                .padding(.horizontal, 6 * u)
+                .padding(.bottom, 8 * u)
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("weekly-recap-view")
-            }
-            .navigationTitle("Weekly recap")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        rewards.markRecapSeen(week, nextWeekIdea: idea)
-                        dismiss()
-                    }
-                    .accessibilityIdentifier("recap-done-button")
-                }
             }
         }
         .onAppear { idea = rewards.nextWeekIdea(for: week) ?? "" }
@@ -65,34 +63,34 @@ private struct RecapNumbers: View {
     let bonus: Award?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // One element each, read as its text (otherwise the icon can take the identifier).
-            Label(totalText, systemImage: "drop")
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(totalText)
-                .accessibilityIdentifier("recap-total-label")
-            Label(daysText, systemImage: "leaf")
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(daysText)
-                .accessibilityIdentifier("recap-days-label")
-            HStack(spacing: 8) {
-                CoinIcon()
-                    .frame(width: 22, height: 22)
-                VStack(alignment: .leading, spacing: 2) {
+        PixelSection(title: nil) {
+            row(PixelIcon.drop, totalText, "recap-total-label")
+            row(PixelIcon.leaf, daysText, "recap-days-label")
+            HStack(alignment: .top, spacing: 3 * PixelGrid.uiPoint) {
+                PixelIcon.coin
+                VStack(alignment: .leading, spacing: PixelGrid.uiPoint) {
                     Text("\(coins.coinsText) earned")
                         .accessibilityIdentifier("recap-coins-label")
                     if let bonus {
                         Text("+\(bonus.coins) for staying within your goal")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .pixelFont(.body, 9)
+                            .foregroundStyle(PixelPalette.tealDark)
                             .accessibilityIdentifier("recap-goal-bonus-label")
                     }
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .pixelFont(.body, 11)
+    }
+
+    // The identifier goes on the text, so it reads as its words.
+    private func row(_ icon: PixelIcon, _ text: String, _ identifier: String) -> some View {
+        HStack(alignment: .top, spacing: 3 * PixelGrid.uiPoint) {
+            icon
+            Text(text)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier(identifier)
+        }
     }
 
     private var totalText: String {
@@ -112,18 +110,17 @@ private struct RecapReflections: View {
 
     var body: some View {
         let reflections = week.days.compactMap { model.journal.reflection(on: $0) }
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Your reflections")
-                .font(.headline)
+        PixelSection(title: "Your reflections") {
             if reflections.isEmpty {
                 Text("No reflections this week. They're always optional.")
-                    .foregroundStyle(.secondary)
+                    .pixelFont(.body, 10)
                     .accessibilityIdentifier("recap-no-reflections-label")
             }
             ForEach(reflections, id: \.day) { reflection in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(model.title(for: reflection.day))
-                        .font(.caption.weight(.semibold))
+                        .pixelFont(.labelBold, 8)
+                        .foregroundStyle(PixelPalette.tealDark)
                     ReflectionRow(reflection: reflection)
                 }
                 .accessibilityElement(children: .combine)

@@ -98,6 +98,14 @@ order.
 
 1. **Sheets as parchment:** Log a drink, Reflection, Shop, slot sheet, weekly recap, hatch, visitor. These are
    `PixelPanel` cards over the dimmed scene, with a title ribbon and pixel buttons.
+   - `ParchmentSheet` replaces each sheet's navigation bar: Cancel or Skip on the left, the `TitleRibbon` in the
+     middle, Save or Done on the right. Each sheet gets a root identifier, which scenarios use in place of the
+     navigation bar: `log-drink-sheet`, `edit-drink-sheet`, `reflection-sheet`, `shop-sheet`, `slot-sheet`,
+     `recap-sheet` (the visitor keeps `visitor-dialog`, the hatch `hatch-view`).
+   - Forms become `PixelSection`s (a small caps heading over a paper card) with `PixelStepper`, the `.pixel`
+     toggle style, `PixelSegmented` and `.pixelField()`. The date picker stays the system one.
+   - The shop's "Buy this decoration?" is a pixel card over the shop (`confirm-buy-dialog`), not a system alert.
+   - The hatch moment is a full-screen cover with a clear background: a parchment card over the dimmed Home.
 2. **The Wander:** one continuous vertical trail painting (spec 05 §7), with the path, nodes and pet on the world
    grid, and the area name on signposts.
 3. **History, Pets, Settings:** parchment lists inside a wooden frame. Settings keeps system controls where a pixel

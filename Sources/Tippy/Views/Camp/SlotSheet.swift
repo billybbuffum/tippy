@@ -17,60 +17,74 @@ struct SlotSheet: View {
     var body: some View {
         let current = rewards.item(in: slot.id)
         let options = rewards.storedItems(fitting: slot.kind)
-        NavigationStack {
-            List {
-                if let current {
-                    Section("Here now") {
-                        Label {
-                            Text(current.name)
-                        } icon: {
-                            DecorationSprite(item: current).frame(width: 36, height: 36)
-                        }
-                        Button("Move to another spot") {
-                            move(current.id)
-                            dismiss()
-                        }
-                        .accessibilityIdentifier("move-item-button")
-                        Button("Put away") {
-                            rewards.store(slotID: slot.id)
-                            dismiss()
-                        }
-                        .accessibilityIdentifier("store-item-button")
-                    }
-                }
-                Section(current == nil ? "Place here" : "Swap with") {
-                    if options.isEmpty {
-                        Text("Nothing in storage fits this spot yet.")
-                            .foregroundStyle(.secondary)
-                        Button("Visit the shop") {
-                            wantsShop()
-                            dismiss()
-                        }
-                        .accessibilityIdentifier("slot-shop-button")
-                    }
-                    ForEach(options) { item in
-                        Button {
-                            if rewards.place(item.id, in: slot.id) { dismiss() }
-                        } label: {
-                            Label {
-                                Text(item.name)
-                            } icon: {
-                                DecorationSprite(item: item).frame(width: 36, height: 36)
+        let u = PixelGrid.uiPoint
+        ParchmentSheet(title: CampLayout.label(for: slot), identifier: "slot-sheet") {
+            Button("Close") { dismiss() }
+                .buttonStyle(.pixel(.paper, size: 10, fill: false))
+                .accessibilityIdentifier("slot-close-button")
+        } trailing: {
+            EmptyView()
+        } content: {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6 * u) {
+                    if let current {
+                        PixelSection(title: "Here now") {
+                            itemRow(current)
+                            HStack(spacing: 3 * u) {
+                                Button("Move it") {
+                                    move(current.id)
+                                    dismiss()
+                                }
+                                .buttonStyle(.pixel(.teal, size: 10))
+                                .accessibilityLabel("Move to another spot")
+                                .accessibilityIdentifier("move-item-button")
+                                Button("Put away") {
+                                    rewards.store(slotID: slot.id)
+                                    dismiss()
+                                }
+                                .buttonStyle(.pixel(.wood, size: 10))
+                                .accessibilityIdentifier("store-item-button")
                             }
                         }
-                        .accessibilityIdentifier("place-\(item.id)-button")
+                    }
+                    PixelSection(title: current == nil ? "Place here" : "Swap with") {
+                        if options.isEmpty {
+                            Text("Nothing in storage fits this spot yet.")
+                                .pixelFont(.body, 10)
+                            Button("Visit the shop") {
+                                wantsShop()
+                                dismiss()
+                            }
+                            .buttonStyle(.pixel(.teal, size: 10, fill: false))
+                            .accessibilityIdentifier("slot-shop-button")
+                        }
+                        ForEach(options) { item in
+                            Button {
+                                if rewards.place(item.id, in: slot.id) { dismiss() }
+                            } label: {
+                                itemRow(item)
+                            }
+                            .buttonStyle(.pixel(.parchment, size: 11))
+                            .accessibilityLabel(item.name)
+                            .accessibilityIdentifier("place-\(item.id)-button")
+                        }
                     }
                 }
-            }
-            .navigationTitle(CampLayout.label(for: slot))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
-                        .accessibilityIdentifier("slot-close-button")
-                }
+                .padding(.horizontal, 6 * u)
+                .padding(.bottom, 8 * u)
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    private func itemRow(_ item: CatalogItem) -> some View {
+        HStack(spacing: 3 * PixelGrid.uiPoint) {
+            DecorationSprite(item: item)
+                .frame(width: 36, height: 36)
+                .accessibilityHidden(true)
+            Text(item.name)
+                .pixelFont(.body, 11)
+            Spacer(minLength: 0)
+        }
     }
 }

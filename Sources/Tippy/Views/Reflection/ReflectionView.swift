@@ -14,45 +14,48 @@ struct ReflectionView: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 12) {
-                Group {
-                    if let pet = wander.shownPet {
-                        PetView(mood: .happy, species: pet.species)
-                    } else {
-                        EggView(species: wander.hatchingPet?.species ?? wander.nest?.species ?? .pondling, wiggles: false)
+        let u = PixelGrid.uiPoint
+        ParchmentSheet(title: model.title(for: day), identifier: "reflection-sheet") {
+            Button("Skip") { done() }
+                .buttonStyle(.pixel(.paper, size: 10, fill: false))
+                .accessibilityIdentifier("reflection-skip-button")
+        } trailing: {
+            Button("Save") {
+                if model.reflect(on: day, answer: answer) { done() }
+            }
+            .buttonStyle(.pixel(.teal, size: 10, fill: false))
+            .disabled(answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .accessibilityIdentifier("reflection-save-button")
+        } content: {
+            VStack(alignment: .leading, spacing: 5 * u) {
+                // The pet asks, in its bubble.
+                HStack(alignment: .bottom, spacing: 2 * u) {
+                    Group {
+                        if let pet = wander.shownPet {
+                            PetView(mood: .happy, species: pet.species)
+                        } else {
+                            EggView(species: wander.hatchingPet?.species ?? wander.nest?.species ?? .pondling, wiggles: false)
+                        }
                     }
+                    .frame(width: 72, height: 72)
+                    Text(model.prompt(for: day).text)
+                        .pixelFont(.body, 12)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("reflection-prompt-label")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .pixelPanel(.paper)
                 }
-                .frame(width: 72, height: 72)
-                Text(model.prompt(for: day).text)
-                    .font(.title3.weight(.semibold))
-                    .accessibilityIdentifier("reflection-prompt-label")
+                TextField("A few words", text: $answer, axis: .vertical)
+                    .lineLimit(3...6)
+                    .focused($focused)
+                    .accessibilityIdentifier("reflection-answer-field")
+                    .pixelField()
+                Text("Optional. Your answers stay on this phone and come back in your weekly recap.")
+                    .pixelFont(.body, 9)
+                    .foregroundStyle(PixelPalette.plum.opacity(0.75))
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            TextField("A few words", text: $answer, axis: .vertical)
-                .lineLimit(3...6)
-                .textFieldStyle(.roundedBorder)
-                .focused($focused)
-                .accessibilityIdentifier("reflection-answer-field")
-            Text("Optional. Your answers stay on this phone and come back in your weekly recap.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding()
-        .navigationTitle(model.title(for: day))
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Skip") { done() }
-                    .accessibilityIdentifier("reflection-skip-button")
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    if model.reflect(on: day, answer: answer) { done() }
-                }
-                .disabled(answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityIdentifier("reflection-save-button")
-            }
+            .padding(.horizontal, 6 * u)
         }
     }
 }
@@ -64,9 +67,7 @@ struct ReflectionSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            ReflectionView(day: day) { dismiss() }
-        }
-        .presentationDetents([.medium, .large])
+        ReflectionView(day: day) { dismiss() }
+            .presentationDetents([.medium, .large])
     }
 }

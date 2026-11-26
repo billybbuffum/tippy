@@ -40,5 +40,8 @@ struct PixelIcon: View {
     static let close = PixelIcon(rows: ["oo...oo", "ooo.ooo", ".ooooo.", "..ooo..", ".ooooo.", "ooo.ooo", "oo...oo"])
     static let bulb = PixelIcon(rows: ["..ooo..", ".offfo.", "offyffo", "offyffo", ".ofyfo.", "..owo..", "..ooo.."])
     static let bell = PixelIcon(rows: ["...o...", "..oyo..", ".oyyyo.", ".oyfyo.", ".oyyyo.", "ooooooo", "...o..."])
+    static let plus = PixelIcon(rows: ["..o..", "..o..", "ooooo", "..o..", "..o.."])
+    static let minus = PixelIcon(rows: [".....", ".....", "ooooo", ".....", "....."])
+    static let drop = PixelIcon(rows: ["...o...", "..oto..", ".ottto.", "ottttto", "otwttto", ".ottto.", "..ooo.."])
     static let sparkle = PixelIcon(rows: ["...y...", "..yfy..", "yyffyyy", "..yfy..", "...y..."])
 }

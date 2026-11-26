@@ -3,6 +3,8 @@ import SwiftUI
 /// How a pixel panel or button is coloured.
 enum PixelPanelStyle {
     case parchment
+    /// A lighter card that stands out on a parchment sheet.
+    case paper
     case wood
     case teal
     case leaf
@@ -12,6 +14,7 @@ enum PixelPanelStyle {
     var fill: Color {
         switch self {
         case .parchment: return PixelPalette.parchment
+        case .paper: return PixelPalette.parchmentLight
         case .wood: return PixelPalette.woodLight
         case .teal: return PixelPalette.teal
         case .leaf: return PixelPalette.leaf
@@ -21,7 +24,7 @@ enum PixelPanelStyle {
 
     var shade: Color {
         switch self {
-        case .parchment: return PixelPalette.parchmentShade
+        case .parchment, .paper: return PixelPalette.parchmentShade
         case .wood: return PixelPalette.wood
         case .teal: return PixelPalette.tealDark
         case .leaf: return PixelPalette.leafDark
@@ -32,6 +35,7 @@ enum PixelPanelStyle {
     var highlight: Color {
         switch self {
         case .parchment, .chosen: return PixelPalette.parchmentLight
+        case .paper: return .white
         case .wood: return PixelPalette.woodHighlight
         case .teal: return PixelPalette.tealLight
         case .leaf: return PixelPalette.leafLight
@@ -43,7 +47,7 @@ enum PixelPanelStyle {
     /// Text and icons drawn on it.
     var ink: Color {
         switch self {
-        case .parchment, .chosen: return PixelPalette.plum
+        case .parchment, .paper, .chosen: return PixelPalette.plum
         case .wood, .teal, .leaf: return PixelPalette.parchmentLight
         }
     }

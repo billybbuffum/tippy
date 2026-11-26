@@ -11,41 +11,40 @@ struct VisitorView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 18) {
-            Spacer(minLength: 24)
-            Group {
-                if SpriteLibrary.image("Pet/fox-dusk") != nil {
-                    SpriteImage(path: "Pet/fox-dusk")
-                } else {
-                    PetSprite(pose: .happy, species: .fox)
+        let u = PixelGrid.uiPoint
+        ParchmentSheet(title: "A visitor at dusk", identifier: "visitor-dialog", titleIdentifier: "visitor-title-label") {
+            EmptyView()
+        } trailing: {
+            EmptyView()
+        } content: {
+            VStack(spacing: 4 * u) {
+                Group {
+                    if SpriteLibrary.image("Pet/fox-dusk") != nil {
+                        SpriteImage(path: "Pet/fox-dusk")
+                    } else {
+                        PetSprite(pose: .happy, species: .fox)
+                    }
                 }
-            }
-            .frame(width: 200, height: 200)
-            .accessibilityLabel("A cinnamon fox sitting by a lantern")
-            Text("A visitor at dusk")
-                .font(.title2.bold())
-                .accessibilityIdentifier("visitor-title-label")
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(lines, id: \.self) { line in
-                    Text(line)
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                .frame(width: 180, height: 180)
+                .accessibilityLabel("A cinnamon fox sitting by a lantern")
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 3 * u) {
+                        ForEach(lines, id: \.self) { line in
+                            Text(line)
+                                .pixelFont(.body, 11)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .pixelPanel(.paper)
+                        }
+                    }
                 }
+                Button("Wave goodbye") { dismiss() }
+                    .buttonStyle(.pixel(.teal))
+                    .accessibilityIdentifier("visitor-done-button")
             }
-            Spacer()
-            Button {
-                dismiss()
-            } label: {
-                Text("Wave goodbye").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .accessibilityIdentifier("visitor-done-button")
+            .padding(.horizontal, 6 * u)
+            .padding(.bottom, 4 * u)
         }
-        .padding()
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("visitor-dialog")
     }
 
     private var lines: [String] {

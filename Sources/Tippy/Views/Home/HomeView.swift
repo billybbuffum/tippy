@@ -136,12 +136,14 @@ struct HomeView: View {
                     .accessibilityIdentifier("today-status-label")
                     .position(layout.point(CGPoint(x: 0.5, y: 0.40)))
                 if let countdown {
+                    // The identifier goes on the text itself: on the panel it
+                    // would name a container with an empty label.
                     Text(countdown)
                         .pixelFont(.body, 9)
                         .foregroundStyle(PixelPalette.plum)
+                        .accessibilityIdentifier("nest-countdown-label")
                         .pixelPanel(.parchment)
                         .fixedSize()
-                        .accessibilityIdentifier("nest-countdown-label")
                         .position(layout.point(wander.shownPet == nil ? CGPoint(x: 0.5, y: 0.97) : CGPoint(x: 0.26, y: 0.92)))
                 }
             }

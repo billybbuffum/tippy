@@ -128,7 +128,7 @@ Demo mode is the `-ui-smoke` launch argument, honoured only on the simulator (`S
 | `wander-mid` | Nov 11–18 logged with one reflection: 9 steps on the Wander, the pondling out, the moth egg nested one check-in from hatching |
 | `two-pets` | `wander-mid` with the moth hatched (named Dot), the pondling out, the nest empty |
 | `fox-visit` | `two-pets` plus the fox at dusk found on the trail and not met yet |
-| `at-fork` | `two-pets` with 13 steps and the fox met: the pet waits at the Heron's Inlet fork with 2 steps saved |
+| `at-fork` | `two-pets` with 16 steps and the fox met: the pet waits at the Heron's Inlet fork with 5 steps saved |
 | `fork-passed` | 15 steps with Heron's Inlet passed: the side path open to explore from the map |
 
 Every seed fixes the clock at Thursday 19 November 2026, 6 PM, keeps the journal and the Wander in memory, and sends no

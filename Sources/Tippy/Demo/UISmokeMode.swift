@@ -59,8 +59,9 @@ enum UISmokeMode {
         case twoPets = "two-pets"
         /// `two-pets` one step further: the fox at dusk found on the trail and not met yet.
         case foxVisit = "fox-visit"
-        /// `two-pets` with 13 steps and the fox met: the pet waits at the
-        /// Heron's Inlet fork (step 11) with 2 steps saved (spec 07).
+        /// `two-pets` with 16 steps and the fox met: the pet waits at the
+        /// Heron's Inlet fork (step 11) with 5 steps saved (spec 07), enough
+        /// to reach the heron down the side path.
         case atFork = "at-fork"
         /// 15 steps with Heron's Inlet passed: the pet at step 15, the side
         /// path open to explore from the map.
@@ -314,7 +315,7 @@ enum UISmokeMode {
                 let dot = Pet(id: moth.id, speciesID: Species.moth.id, name: "Dot", hatchedOn: today.adding(days: -1))
                 var foundHere = found
                 foundHere["reeds-fox"] = today.adding(days: -1)
-                let extra = seed == .atFork ? [0, 1, 2, 3] : [0, 1, 2, 3, 5, 6]
+                let extra = seed == .atFork ? [0, 1, 2, 3, 5, 6, 7] : [0, 1, 2, 3, 5, 6]
                 for offset in extra {
                     let day = first.adding(days: offset)
                     steps.append(StepAward(key: StepKey(.reflection, day), awardedOn: day))

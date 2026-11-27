@@ -324,7 +324,8 @@ Use these terms exactly in code, tests, UI copy and docs. If one changes, update
 | **Step** *(Wander)* | One per check-in and one per reflection, for days within 7 days of today; recorded once, never taken back. The trail position is the number of steps | `StepKey`, `StepAward`, `StepPolicy`, `position` |
 | **Trail**, **area** *(Wander)* | The fixed route (version 1, 60 steps); its stretches, each with a banner: Pond Shore, Reed Bed, Willow Grove, Mossy Woods, Mushroom Glade, Meadow | `Trail`, `Area` |
 | **Landmark** *(Wander)* | A spot on the trail at a given step, holding an egg, a decoration, a coin pouch, a visitor or just scenery | `Landmark`, `LandmarkContent` |
-| **Fork**, **side path** *(Wander)* | A spot on the main trail where a short loop leaves and comes back; the loop, with its own landmarks, whose last step returns the pet | `Fork`, `SidePath`, `Trail.forks` |
+| **Fork**, **side path**, **habitat** *(Wander)* | A spot on the main trail where a winding side path leaves and comes back; the path, through a habitat of its own (marsh, ancient willow, fern gully, fairy ring) with its own discoveries, whose last step returns the pet | `Fork`, `SidePath`, `habitat`, `Trail.forks`, `SidePathHabitat` |
+| **Visitor** *(Wander)* | A creature met once at a landmark: the fox at dusk, and one living down each side path | `.visitor(id:)`, `seenVisitors`, `VisitorProfile` |
 | **Route**, **walk** *(Wander)* | Her choices at forks and revisits, append-only; where her steps took the pet along it, derived by replay, never stored | `RouteChoice`, `Walk`, `RoutePolicy`, `walk` |
 | **Waiting**, **saved steps** *(Wander)* | The pet stands at a fork until she picks a way; steps earned meanwhile are kept for whichever way she picks | `waitingAt`, `savedSteps`, `choose(at:explore:)` |
 | **Excursion**, **revisit** *(Wander)* | A side path being walked; sending the pet down a passed one later from the map | `excursion`, `openForks`, `revisit(_:)` |

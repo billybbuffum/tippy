@@ -76,6 +76,7 @@ public enum CampCatalog {
         item("pebble-cairn", "Pebble cairn", 0, .ground, inShop: false),
         item("lily-bloom", "Lily in bloom", 0, .water, inShop: false),
         item("glow-mushrooms", "Glowing mushrooms", 0, .light, inShop: false),
+        item("toadstool-seat", "Toadstool seat", 0, .ground, inShop: false),
     ]
 
     public static func item(_ id: String) -> CatalogItem? { items.first { $0.id == id } }

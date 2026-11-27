@@ -37,14 +37,26 @@ final class ForkTests: XCTestCase {
     func testForksSitBetweenLandmarksWithUniqueIDs() {
         let all = Trail.allLandmarks
         XCTAssertEqual(Set(all.map(\.id)).count, all.count, "landmark IDs are unique across every path")
-        XCTAssertEqual(all.count, Trail.landmarks.count + 8)
+        XCTAssertEqual(all.count, Trail.landmarks.count + 16)
         XCTAssertEqual(Trail.forks.map(\.id), ["reeds-inlet", "willow-hollow", "woods-ferns", "glade-ring"])
         XCTAssertEqual(Trail.forks.map(\.mainStep), Trail.forks.map(\.mainStep).sorted())
         let mainSteps = Set(Trail.landmarks.map(\.step))
         for fork in Trail.forks {
             XCTAssertFalse(mainSteps.contains(fork.mainStep), "\(fork.id) is not on a landmark")
             XCTAssertNotNil(Trail.areas.first { $0.id == fork.areaID }, fork.id)
-            XCTAssertTrue((4...7).contains(fork.sidePath.length), fork.id)
+            XCTAssertTrue((6...9).contains(fork.sidePath.length), fork.id)
+            XCTAssertFalse(fork.sidePath.habitat.isEmpty, fork.id)
+            // Each side path has its own scenery, coins, decoration and creature.
+            let kinds = Set(fork.sidePath.landmarks.map { landmark -> String in
+                switch landmark.content {
+                case .scenery: return "scenery"
+                case .pouch: return "pouch"
+                case .decoration: return "decoration"
+                case .visitor: return "visitor"
+                case .egg: return "egg"
+                }
+            })
+            XCTAssertEqual(kinds, ["scenery", "pouch", "decoration", "visitor"], fork.id)
             for landmark in fork.sidePath.landmarks {
                 XCTAssertTrue((1..<fork.sidePath.length).contains(landmark.step), landmark.id)
                 XCTAssertEqual(Trail.fork(ofLandmark: landmark.id)?.id, fork.id)
@@ -54,7 +66,7 @@ final class ForkTests: XCTestCase {
         }
         // Side landmarks follow their fork in trail order.
         let ids = all.map(\.id)
-        XCTAssertEqual(Array(ids[5...7]), ["inlet-pouch", "inlet-cairn", "reeds-pouch"])
+        XCTAssertEqual(Array(ids[5...9]), ["inlet-dragonflies", "inlet-pouch", "inlet-heron", "inlet-cairn", "reeds-pouch"])
     }
 
     // MARK: Waiting
@@ -92,17 +104,18 @@ final class ForkTests: XCTestCase {
     func testExploreWalksTheLoopAndComesBack() throws {
         var state = wander(steps: 13)
         let explored = try state.choose(at: "reeds-inlet", explore: true, today: today)
-        XCTAssertEqual(explored.newlyFound.map(\.id), ["inlet-pouch"])
+        XCTAssertEqual(explored.newlyFound.map(\.id), ["inlet-dragonflies"])
         XCTAssertEqual(state.walk.spot, .side(forkID: "reeds-inlet", step: 2))
         XCTAssertEqual(state.walk.excursion?.id, "reeds-inlet")
         XCTAssertNil(state.walk.waitingAt)
-        XCTAssertEqual(state.nextLandmark?.id, "inlet-cairn")
-        XCTAssertEqual(state.stepsToNextLandmark, 2)
+        XCTAssertEqual(state.nextLandmark?.id, "inlet-pouch")
+        XCTAssertEqual(state.stepsToNextLandmark, 1)
         XCTAssertEqual(state.currentArea?.id, "reed-bed")
 
-        // Three more: the cairn, then the step back to the fork.
-        let back = earn(3, &state)
-        XCTAssertEqual(back.newlyFound.map(\.id), ["inlet-cairn"])
+        // Six more: the pouch, the heron, the cairn, then the step back to the fork.
+        let back = earn(6, &state)
+        XCTAssertEqual(back.newlyFound.map(\.id), ["inlet-pouch", "inlet-heron", "inlet-cairn"])
+        XCTAssertEqual(state.unseenVisitors.map(\.id), ["reeds-fox", "inlet-heron"], "the heron waits to be met")
         XCTAssertEqual(back.excursionDone?.id, "reeds-inlet")
         XCTAssertEqual(state.walk.spot, .main(step: 11))
         XCTAssertNil(state.walk.excursion)
@@ -165,8 +178,8 @@ final class ForkTests: XCTestCase {
         XCTAssertEqual(state.walk.mainStep, 15, "its place on the main trail is kept")
         XCTAssertEqual(state.route.last, .revisit(forkID: "reeds-inlet", afterSteps: 15))
 
-        let loop = earn(5, &state)
-        XCTAssertEqual(loop.newlyFound.map(\.id), ["inlet-pouch", "inlet-cairn"])
+        let loop = earn(8, &state)
+        XCTAssertEqual(loop.newlyFound.map(\.id), ["inlet-dragonflies", "inlet-pouch", "inlet-heron", "inlet-cairn"])
         XCTAssertEqual(state.walk.spot, .main(step: 15), "and it hops back where it was")
         XCTAssertEqual(state.walk.openForks, [])
         XCTAssertThrowsError(try state.revisit("reeds-inlet", today: today)) {
@@ -192,9 +205,9 @@ final class ForkTests: XCTestCase {
         XCTAssertEqual(state.walk.waitingAt?.id, "willow-hollow")
         XCTAssertEqual(state.walk.savedSteps, 3)
         let events = try state.revisit("reeds-inlet", today: today)
-        XCTAssertEqual(events.newlyFound.map(\.id), ["inlet-pouch"])
+        XCTAssertEqual(events.newlyFound.map(\.id), ["inlet-dragonflies", "inlet-pouch"])
         XCTAssertEqual(state.walk.spot, .side(forkID: "reeds-inlet", step: 3))
-        _ = earn(2, &state)
+        _ = earn(5, &state)
         XCTAssertEqual(state.walk.spot, .main(step: 19))
         XCTAssertEqual(state.walk.waitingAt?.id, "willow-hollow", "back at the fork it was waiting at")
     }
@@ -204,7 +217,7 @@ final class ForkTests: XCTestCase {
     func testSideFindsAreFoundOnceAndListedInTrailOrder() throws {
         var state = wander(steps: 16)
         _ = try state.choose(at: "reeds-inlet", explore: true, today: today)
-        XCTAssertEqual(state.foundLandmarks.suffix(3).map(\.id), ["reeds-fox", "inlet-pouch", "inlet-cairn"])
+        XCTAssertEqual(state.foundLandmarks.suffix(4).map(\.id), ["reeds-fox", "inlet-dragonflies", "inlet-pouch", "inlet-heron"])
         XCTAssertTrue(state.sync(journal: Journal(), today: today).isEmpty)
         let pouches = state.foundLandmarks.filter { if case .pouch = $0.content { return true } else { return false } }
         XCTAssertEqual(pouches.map(\.id), ["shore-pouch", "inlet-pouch"])

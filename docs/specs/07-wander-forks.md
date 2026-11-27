@@ -7,12 +7,15 @@ finds, so wandering off is worth it, but nothing on the main trail is ever skipp
 
 **Decided with her** (26 November 2026):
 - **She picks** at each fork. The pet waits there, and steps earned meanwhile are saved, never lost.
-- **Side paths loop back** to the fork they left from, 5 to 7 steps long (the last step is the one back).
+- **Side paths loop back** to the fork they left from, 8 or 9 steps long (the last step is the one back).
+- **Each side path is a place of its own** (asked for on 27 November): a winding route through a habitat that isn't
+  on the main trail (a marsh, an ancient willow, a fern gully, a fairy ring), with its own discoveries: scenery,
+  coins, a decoration found nowhere else, and a creature who lives there and visits.
 - **Nothing is missed forever.** A passed side path stays open, and she can explore it any time.
 
 **Depends on:** `main` (specs 03 and 06). **Builds with:** the continuous Wander (spec 06, later screen 2), so the
 trail painting is drawn once with its branches. **Art:** [spec 05 §7](./05-art-requests.md#7-immersive-ui-spec-06)
-(the branches in `trail-tall`, signposts, three new decorations). Like every spec, it works with placeholders until
+(the branches in `trail-tall`, signposts, four new decorations, four creatures). Like every spec, it works with placeholders until
 the art lands: on today's banner map, a side path is a short dotted loop beside the main path.
 
 ## Words
@@ -20,7 +23,8 @@ the art lands: on today's banner map, a side path is a short dotted loop beside 
 | Term | Meaning |
 |---|---|
 | **Fork** | A spot on the main trail where a side path leaves and comes back. It has a signpost with the side path's name. |
-| **Side path** | A short loop (5 to 7 steps) off a fork with its own landmarks. Its last step brings the pet back to its fork (or, on a revisit, to where it left from). |
+| **Side path** | A winding route (8 or 9 steps) off a fork through a habitat of its own, with its own landmarks. Its last step brings the pet back to its fork (or, on a revisit, to where it left from). |
+| **Habitat** | The kind of place a side path winds through: Marsh, Ancient willow, Fern gully, Fairy ring. |
 | **Route** | The choices she has made, in order: explore or pass at each fork reached, and later visits to passed paths. Append-only. |
 | **Walk** | Where the pet is, derived by replaying her steps along the route. Never stored, like the trail position today. |
 | **Waiting**, **saved steps** | The pet stands at a fork she hasn't chosen at yet; steps earned meanwhile are kept for whichever way she picks. |
@@ -55,17 +59,28 @@ extension Trail {
 Landmark IDs are unique across the main trail and every side path, because `found` is one dictionary. Forks sit
 between main-trail landmarks, never on one.
 
-| Fork ID | Area | Main step | Side path | Length | Finds (step into the path) |
-|---|---|---|---|---|---|
-| `reeds-inlet` | Reed Bed | 11 | Heron's Inlet | 5 | `inlet-pouch` pouch of 6 coins (2), `inlet-cairn` decoration `pebble-cairn` (4) |
-| `willow-hollow` | Willow Grove | 19 | The Hollow Willow | 6 | `hollow-swing` scenery "A rope swing in the willow" (2), `hollow-bloom` decoration `lily-bloom` (5) |
-| `woods-ferns` | Mossy Woods | 33 | Fern Hollow | 7 | `ferns-pouch` pouch of 12 coins (3), `ferns-glow` decoration `glow-mushrooms` (6) |
-| `glade-ring` | Mushroom Glade | 49 | The Toadstool Ring | 5 | `ring-dance` scenery "Mushrooms dancing in a ring" (2), `ring-pouch` pouch of 15 coins (4) |
+| Fork ID | Area | Main step | Side path | Habitat | Length | Discoveries (step into the path) |
+|---|---|---|---|---|---|---|
+| `reeds-inlet` | Reed Bed | 11 | Heron's Inlet | Marsh | 8 | `inlet-dragonflies` scenery (2), `inlet-pouch` 6 coins (3), `inlet-heron` visitor `heron` (5), `inlet-cairn` decoration `pebble-cairn` (7) |
+| `willow-hollow` | Willow Grove | 19 | The Hollow Willow | Ancient willow | 8 | `hollow-swing` scenery (2), `hollow-owl` visitor `owl` (4), `hollow-bloom` decoration `lily-bloom` (6), `hollow-pouch` 10 coins (7) |
+| `woods-ferns` | Mossy Woods | 33 | Fern Hollow | Fern gully | 9 | `ferns-pouch` 12 coins (2), `ferns-hedgehog` visitor `hedgehog` (4), `ferns-stream` scenery (6), `ferns-glow` decoration `glow-mushrooms` (8) |
+| `glade-ring` | Mushroom Glade | 49 | The Toadstool Ring | Fairy ring | 8 | `ring-dance` scenery (2), `ring-toad` visitor `toad` (4), `ring-pouch` 15 coins (6), `ring-seat` decoration `toadstool-seat` (7) |
 
-The three decorations are new find-only catalog items in Rewards (`inShop: false`, like `firefly-jar`):
-`pebble-cairn` (ground), `lily-bloom` (water) and `glow-mushrooms` (light). The app layer grants them through the
-existing coordinator with key `find:<landmarkID>`, and pouches with `pouch:<landmarkID>`. Rewards never learns about
-forks.
+The four decorations are new find-only catalog items in Rewards (`inShop: false`, like `firefly-jar`):
+`pebble-cairn` (ground), `lily-bloom` (water), `glow-mushrooms` (light) and `toadstool-seat` (ground). The app layer
+grants them through the existing coordinator with key `find:<landmarkID>`, and pouches with `pouch:<landmarkID>`.
+Rewards never learns about forks.
+
+**The creatures** visit once, like the fox at dusk (the same `seenVisitors` and visitor sheet). Who they are and what
+they say lives in `Views/Wander/VisitorProfiles.swift`; they talk about their place and the pet, never about
+drinking:
+
+| Visitor ID | Who | Where |
+|---|---|---|
+| `heron` | Sable, a heron fishing in the shallows | Heron's Inlet |
+| `owl` | Bramble, an owl in the hollow trunk | The Hollow Willow |
+| `hedgehog` | Thistle, a hedgehog in the moss | Fern Hollow |
+| `toad` | Bellow, a toad playing a reed flute | The Toadstool Ring |
 
 ### Route and walk
 
@@ -164,16 +179,18 @@ coordinator's find replay, like `sync`.
 - **Revisiting:** a passed side path's signpost has an "Explore" button (`revisit-<forkID>-button`) while it's open.
   The pet hops to the fork with a small puff, walks the loop with saved or future steps, and hops back.
 - **VoiceOver:** `wander-pet`'s value names the spot: "Step 9", "At the Heron's Inlet fork", or "Heron's Inlet,
-  step 2 of 4".
+  step 5 of 8".
 
-**As built** (the first version, on today's banner map): a fork takes its own row in the middle of the trail with
-its side path drawn as a dotted loop out to one side and its signpost (with the Explore button) on the other side
-of the main path. The
-replay follows the walked route by index, so it goes round a loop and back. Home's signpost reads "At a fork: which
+**As built** (on today's banner map): a fork takes two rows in the middle of the trail. Its side path winds out to
+one side through its habitat, drawn in code until the art lands (`SidePathHabitat`: the route's shape in a unit
+space, and the scenery under it: a pool with reeds and lily pads, a willow with its pond, a stream through ferns, a
+ring of toadstools). The signpost, with the habitat and the Explore button, stands on the other side of the main
+path. The replay follows the walked route by index, along the winding path and back. Home's signpost reads "At a fork: which
 way?", "Exploring Heron's Inlet", or "3 steps to a fork" when a fork comes before the next landmark.
 
 **Demo seeds:**
-- `at-fork`: `wander-mid` with 13 steps, so the pet waits at Heron's Inlet with 2 saved steps.
+- `at-fork`: `two-pets` with 16 steps and the fox met, so the pet waits at Heron's Inlet with 5 saved steps
+  (enough to reach the heron).
 - `fork-passed`: 15 steps with Heron's Inlet passed and open.
 
 **Scenarios:**

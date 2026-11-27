@@ -2,9 +2,13 @@ name: UI smoke
 
 # Builds the app for the iOS Simulator, runs every UI smoke scenario in
 # UISmoke/Tests (XCUITest) with a recording per scenario, and posts the
-# result on the pull request: the scenarios this PR added or changed first
-# ("Feature demo", GIFs inline), then the whole suite as a table with the
-# clips folded away. The GIFs live on the orphan pr-media branch under
+# result on the pull request. The scenarios run in three shards on parallel
+# macOS runners (scripts/smoke-scenarios.py shard), each building once and
+# running a third of the suite, which roughly halves the wait; a small
+# Linux job then merges them (scripts/ui-smoke-merge.py) and reports, as the
+# one "Simulator scenarios" check. The report puts the scenarios this PR
+# added or changed first ("Feature demo", GIFs inline), then the whole
+# suite as a table with the clips folded away. The GIFs live on the orphan pr-media branch under
 # pr-<n>/, removed when the PR closes (ui-smoke-cleanup.yml). See "UI smoke
 # test" in README.md and CLAUDE.md. The cheap "Smoke scenario present"
 # check is a separate workflow (smoke-scenario-check.yml).
@@ -42,16 +46,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  smoke:
-    name: Simulator scenarios
+  shard:
+    name: Scenarios ${{ matrix.shard }}/3
     runs-on: macos-latest
-    timeout-minutes: 45
+    timeout-minutes: 40
+    strategy:
+      # Every shard runs to the end, so one failure never hides the others.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
-        with:
-          # The demo detection diffs against the merge base with the base
-          # branch, so that history is needed.
-          fetch-depth: 0
 
       - name: Show toolchain
         run: xcodebuild -version
@@ -70,9 +75,49 @@ jobs:
           nohup brew install ffmpeg > "$RUNNER_TEMP/ffmpeg-install.log" 2>&1 &
           echo "UI_SMOKE_FFMPEG_PID=$!" >> "$GITHUB_ENV"
 
-      - name: Build, then run and record every scenario
-        id: smoke
+      - name: Build, then run and record this shard's scenarios
+        env:
+          UI_SMOKE_SHARD: ${{ matrix.shard }}/3
         run: scripts/ui-smoke.sh out/ui-smoke
+
+      - name: Upload this shard's output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-shard-${{ matrix.shard }}
+          path: |
+            out/ui-smoke/
+            !out/ui-smoke/raw/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  report:
+    # Keeps the name of the single job this used to be, so the PR check (and
+    # anything that requires it) is unchanged.
+    name: Simulator scenarios
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The demo detection diffs against the merge base with the base
+          # branch, so that history is needed.
+          fetch-depth: 0
+
+      - name: Download the shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ui-smoke-shard-*
+          path: shards
+
+      - name: Merge the shards
+        id: merge
+        run: |
+          set +e
+          python3 scripts/ui-smoke-merge.py shards out/ui-smoke --count 3
+          echo "status=$?" >> "$GITHUB_OUTPUT"
 
       - name: Upload the clips
         id: clips
@@ -91,9 +136,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ui-smoke-screenshots
-          path: |
-            out/ui-smoke/shots/
-            out/ui-smoke/final.png
+          path: out/ui-smoke/shots/
           if-no-files-found: ignore
 
       - name: Upload the logs
@@ -102,10 +145,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ui-smoke-logs
-          path: |
-            out/ui-smoke/*.log
-            out/ui-smoke/signals/
-            out/ui-smoke/smoke.xcresult
+          path: out/ui-smoke/logs/
           if-no-files-found: ignore
 
       - name: Work out the feature demos
@@ -175,4 +215,14 @@ jobs:
           else
             gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" -F body=@comment.md > /dev/null
             echo "Posted a new comment"
+          fi
+
+      - name: Pass only if every scenario passed
+        if: always()
+        env:
+          MERGE_STATUS: ${{ steps.merge.outputs.status }}
+        run: |
+          if [ "${MERGE_STATUS:-1}" != "0" ]; then
+            echo "::error::Not every UI smoke scenario passed; see the comment or results.json."
+            exit 1
           fi

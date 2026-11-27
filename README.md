@@ -105,7 +105,8 @@ ideviceinstaller install Tippy.ipa      # later builds: ideviceinstaller upgrade
 This works as in ChoreLock, except that it runs **automatically on every pull request** (each push included)
 that touches app code, tests or build config (`Sources/`, `Modules/`, `UISmoke/`, `Config/`, `Package.swift`,
 `xtool.yml`, the smoke scripts), not behind a `smoke` label. Docs-only and art-only pull requests skip it, and the
-`Build` workflow skips pushes that only change docs, Markdown or `Assets/Sprites/`. Every XCUITest scenario in `UISmoke/Tests/` runs on the simulator with a recording
+`Build` workflow skips pushes that only change docs, Markdown or `Assets/Sprites/`. The scenarios run in three shards on parallel macOS runners (balanced by `scripts/smoke-scenarios.py shard`), and a
+Linux job merges them (`scripts/ui-smoke-merge.py`) into the one "Simulator scenarios" check. Every XCUITest scenario in `UISmoke/Tests/` runs on the simulator with a recording
 each, and a sticky PR comment shows "Feature demo" first (the scenarios the PR added or changed, GIFs inline),
 then the "Regression suite" table. **Smoke scenario present** (`smoke-scenario-check.yml`) fails a PR that
 changes `Sources/` or `Modules/` without adding or changing a scenario or carrying a `Smoke-demo:` line in its
@@ -137,7 +138,7 @@ cancellation, scrolling and find-card regression scenarios; looping sprite anima
 (named after the journal's pet name) and caught the Wander up with its journal, so it opens with nothing new to celebrate.
 
 On a Mac with a current Xcode, run `brew install xcodegen ffmpeg`, then `scripts/ui-smoke.sh`. This writes `out/ui-smoke/`.
-`UI_SMOKE_ONLY="home log-drink"` runs a subset.
+`UI_SMOKE_ONLY="home log-drink"` runs a subset, and `UI_SMOKE_SHARD=2/3` one shard as CI runs it.
 
 ## Testing the domain
 

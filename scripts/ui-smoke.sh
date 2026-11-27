@@ -11,6 +11,8 @@
 #   UI_SMOKE_UDID     simulator to use (default: the newest plain iPhone)
 #   UI_SMOKE_ONLY     scenarios to run, space-separated (default: all);
 #                     names as scripts/smoke-scenarios.py list prints them
+#   UI_SMOKE_SHARD    k/n: run only shard k of n (scripts/smoke-scenarios.py
+#                     shard); CI runs the shards on parallel runners
 #   UI_SMOKE_KEEP=1   leave the simulator booted afterwards
 #   UI_SMOKE_FFMPEG_PID  a background ffmpeg install to wait for before making GIFs (CI)
 #
@@ -44,6 +46,10 @@ now() { python3 -c 'import time; print(time.time())'; }
 
 log "Listing the scenarios"
 python3 "$ROOT/scripts/smoke-scenarios.py" list --json > "$OUT/scenarios.json" || fail "could not list the scenarios"
+if [ -n "${UI_SMOKE_SHARD:-}" ] && [ -z "${UI_SMOKE_ONLY:-}" ]; then
+  UI_SMOKE_ONLY=$(python3 "$ROOT/scripts/smoke-scenarios.py" shard "$UI_SMOKE_SHARD" | tr '\n' ' ') || fail "bad UI_SMOKE_SHARD"
+  echo "shard $UI_SMOKE_SHARD"
+fi
 ONLY_ARGS=()
 if [ -n "${UI_SMOKE_ONLY:-}" ]; then
   while IFS= read -r line; do

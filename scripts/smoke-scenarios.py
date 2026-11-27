@@ -16,6 +16,12 @@ README.md.
       it: `Smoke-demo: log-drink, home` names the demos,
       `Smoke-demo: none` declares there are none.
 
+  smoke-scenarios.py shard <k>/<n> [--json]
+      The scenarios shard k of n runs (CI runs n shards in parallel):
+      balanced by the length of each scenario's method as a stand-in for its
+      running time, largest first onto the lightest shard. Every scenario is
+      in exactly one shard, and the split only changes when scenarios do.
+
   smoke-scenarios.py check --base <ref> --body-file <file>
       The "Smoke scenario present" check: fails (exit 1, with the reason)
       when Sources/ changed but no scenario did and the body has no
@@ -159,6 +165,32 @@ def cmd_list(args):
             print(s["name"])
 
 
+def shards(count):
+    """Every scenario split into `count` shards, balanced by method length."""
+    buckets = [[] for _ in range(count)]
+    weights = [0] * count
+    scenarios = sorted(all_scenarios(), key=lambda s: (-(s["end"] - s["start"]), s["name"]))
+    for scenario in scenarios:
+        lightest = min(range(count), key=lambda i: (weights[i], i))
+        buckets[lightest].append(scenario)
+        weights[lightest] += scenario["end"] - scenario["start"] + 1
+    return [sorted(bucket, key=lambda s: s["name"]) for bucket in buckets]
+
+
+def cmd_shard(args):
+    m = re.fullmatch(r"(\d+)/(\d+)", args.which)
+    if not m or not 1 <= int(m.group(1)) <= int(m.group(2)):
+        print(f"bad shard {args.which!r}: expected k/n with 1 <= k <= n", file=sys.stderr)
+        return 2
+    chosen = shards(int(m.group(2)))[int(m.group(1)) - 1]
+    if args.json:
+        print(json.dumps(chosen, indent=2))
+    else:
+        for s in chosen:
+            print(s["name"])
+    return 0
+
+
 def resolve_demos(base, body):
     """The demo scenarios for a PR: the override if any, else detection.
     Returns (names, unknown names, source)."""
@@ -234,6 +266,10 @@ def main():
     p.add_argument("--body-file")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_changed)
+    p = sub.add_parser("shard")
+    p.add_argument("which", help="k/n")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_shard)
     p = sub.add_parser("check")
     p.add_argument("--base", required=True)
     p.add_argument("--body-file")

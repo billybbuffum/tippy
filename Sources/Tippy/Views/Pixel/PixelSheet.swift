@@ -78,17 +78,19 @@ struct TitleRibbon: View {
 
     var body: some View {
         let u = PixelGrid.uiPoint
+        // The identifier goes on the text itself: after the background it
+        // would name a wrapper whose label is empty.
         Text(title)
             .pixelFont(.body, 11)
             .foregroundStyle(PixelPalette.parchmentLight)
             .lineLimit(1)
             .minimumScaleFactor(0.6)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityIdentifier(identifier ?? "sheet-title-label")
             .padding(.horizontal, 9 * u)
             .padding(.top, 3 * u)
             .padding(.bottom, 5 * u)
             .background(RibbonShape())
-            .accessibilityAddTraits(.isHeader)
-            .accessibilityIdentifier(identifier ?? "sheet-title-label")
     }
 }
 

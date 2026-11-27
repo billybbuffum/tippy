@@ -66,6 +66,34 @@ def module_dependencies() -> dict[str, set[str]]:
     return deps
 
 
+# A wrapper that turns the view before it into something new: an accessibility
+# identifier placed after one names the wrapper (an element with an empty
+# label, which can't be typed into) instead of the text or field the smoke
+# scenarios read. Mark the wrapper itself a container on purpose with
+# .accessibilityElement(...) between them, or put the identifier first.
+WRAPPERS = re.compile(r"^\s*\.(pixelPanel|pixelField|background)\(")
+
+
+def wrapped_identifiers(source: str) -> list[tuple[int, str]]:
+    """Identifiers that follow a wrapper in the same modifier chain."""
+    lines = source.split("\n")
+    found = []
+    for number, line in enumerate(lines, start=1):
+        if not re.match(r"^\s*\.accessibilityIdentifier\(", line):
+            continue
+        index = number - 2
+        while index >= 0 and lines[index].lstrip().startswith("."):
+            text = lines[index]
+            if re.match(r"^\s*\.accessibilityElement\(", text):
+                break
+            if m := WRAPPERS.match(text):
+                found.append((number, f"accessibilityIdentifier after .{m.group(1)}(...) names the wrapper, not the "
+                                      "text or field; put it before, or add .accessibilityElement(children:) for a container"))
+                break
+            index -= 1
+    return found
+
+
 def main() -> int:
     problems: list[str] = []
     deps = module_dependencies()
@@ -102,6 +130,9 @@ def main() -> int:
 
         if layer == "views" and re.search(r"\b(JournalCodec|RewardsCodec|WanderCodec)\b|\bstore\.(save|load)\b", source):
             problems.append(f"{rel}: views go through the models, never storage")
+
+        if layer == "views":
+            problems.extend(f"{rel}:{line}: {why}" for line, why in wrapped_identifiers(source))
 
     # Context dependencies must not form a cycle.
     def visit(node: str, stack: list[str]) -> None:

@@ -20,3 +20,4 @@ DerivedData/
 
 # The app icon, decrypted or defaulted by scripts/app-icon.sh; never commit it
 /Assets/Icon.png
+__pycache__/

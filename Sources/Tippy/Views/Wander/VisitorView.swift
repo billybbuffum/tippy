@@ -1,9 +1,9 @@
 import SwiftUI
 import TippyWander
 
-/// A visitor found on the Wander, shown once. Today there's one: the
-/// cinnamon fox at dusk, who has kind things to say about the pond and never
-/// mentions drinking. Closing it in any way marks the visit seen.
+/// A visitor found on the Wander, shown once: the cinnamon fox at dusk, or
+/// a creature met down a side path (`VisitorProfile`). Closing it in any way
+/// marks the visit seen.
 struct VisitorView: View {
     let visitorID: String
     let petName: String
@@ -12,24 +12,20 @@ struct VisitorView: View {
 
     var body: some View {
         let u = PixelGrid.uiPoint
-        ParchmentSheet(title: "A visitor at dusk", identifier: "visitor-dialog", titleIdentifier: "visitor-title-label") {
+        let profile = VisitorProfile.profile(for: visitorID)
+        ParchmentSheet(title: profile.title, identifier: "visitor-dialog", titleIdentifier: "visitor-title-label") {
             EmptyView()
         } trailing: {
             EmptyView()
         } content: {
             VStack(spacing: 4 * u) {
-                Group {
-                    if SpriteLibrary.image("Pet/fox-dusk") != nil {
-                        SpriteImage(path: "Pet/fox-dusk")
-                    } else {
-                        PetSprite(pose: .happy, species: .fox)
-                    }
-                }
-                .frame(width: 180, height: 180)
-                .accessibilityLabel("A cinnamon fox sitting by a lantern")
+                portrait(profile)
+                    .frame(width: 180, height: 180)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(profile.description)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 3 * u) {
-                        ForEach(lines, id: \.self) { line in
+                        ForEach(profile.lines(petName), id: \.self) { line in
                             Text(line)
                                 .pixelFont(.body, 11)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -47,12 +43,20 @@ struct VisitorView: View {
         }
     }
 
-    private var lines: [String] {
-        [
-            "Evening! I'm Cinnamon. I wander these reeds when the lanterns come on.",
-            "I've seen \(petName) hopping about. Your pond is getting cozier by the day.",
-            "I'll be off now. Keep wandering: the willow grove has a few secrets of its own.",
-        ]
+    @ViewBuilder
+    private func portrait(_ profile: VisitorProfile) -> some View {
+        if SpriteLibrary.image(profile.spritePath) != nil {
+            SpriteImage(path: profile.spritePath)
+        } else if visitorID == "fox-at-dusk" {
+            PetSprite(pose: .happy, species: .fox)
+        } else {
+            Image(systemName: profile.placeholderSymbol)
+                .resizable()
+                .scaledToFit()
+                .padding(40)
+                .foregroundStyle(PixelPalette.tealDark)
+                .background(Circle().fill(PixelPalette.parchmentLight))
+        }
     }
 }
 

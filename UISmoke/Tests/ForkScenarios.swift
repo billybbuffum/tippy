@@ -2,25 +2,31 @@ import XCTest
 
 /// Forks and side paths on the Wander (spec 07). One scenario per method; see SmokeSupport.swift.
 final class ForkScenarios: SmokeScenario {
-    /// The pet waits at Heron's Inlet with 2 steps saved; exploring walks
-    /// them down the side path to its first find.
+    /// The pet waits at Heron's Inlet with 5 steps saved; exploring walks
+    /// them into the marsh, past the dragonflies and a pouch to the heron,
+    /// who visits back on Home.
     func testForkExplore() {
         launch(seed: .atFork)
         screen("home", element("wander-next-label"))
         XCTAssertEqual(element("wander-next-label").label, "At a fork: which way?")
         element("wander-next-label").tap()
         screen("which-way", element("fork-card"))
-        XCTAssertTrue(element("fork-saved-label").label.hasPrefix("2 steps saved"), element("fork-saved-label").label)
+        XCTAssertTrue(element("fork-saved-label").label.hasPrefix("5 steps saved"), element("fork-saved-label").label)
         XCTAssertEqual(element("wander-pet").value as? String, "Step 11, at the Heron's Inlet fork")
         element("fork-explore-button").tap()
-        let onPath = NSPredicate(format: "value == %@", "Heron's Inlet, step 2 of 5")
+        let onPath = NSPredicate(format: "value == %@", "Heron's Inlet, step 5 of 8")
         expectation(for: onPath, evaluatedWith: element("wander-pet"))
         waitForExpectations(timeout: 8)
-        screen("side-path", element("wander-pet"))
-        XCTAssertEqual(element("landmark-inlet-pouch").value as? String, "found")
+        screen("in-the-marsh", element("wander-pet"))
+        XCTAssertEqual(element("landmark-inlet-dragonflies").value as? String, "found")
+        XCTAssertEqual(element("landmark-inlet-heron").value as? String, "found")
         XCTAssertEqual(element("landmark-inlet-cairn").value as? String, "next")
         XCTAssertFalse(element("fork-card").exists, "the choice is made")
         goBack(from: "The Wander")
+        screen("heron-visits", element("visitor-dialog"), timeout: 15)
+        XCTAssertEqual(element("visitor-title-label").label, "A heron in the shallows")
+        tapWhenSettled(element("visitor-done-button"))
+        XCTAssertTrue(element("visitor-dialog").waitForNonExistence(timeout: 10), "the visitor goes once waved off")
         screen("home-exploring", element("wander-next-label"))
         XCTAssertEqual(element("wander-next-label").label, "Exploring Heron's Inlet")
     }
@@ -33,7 +39,7 @@ final class ForkScenarios: SmokeScenario {
         element("wander-next-label").tap()
         screen("which-way", element("fork-card"))
         element("fork-stay-button").tap()
-        let onward = NSPredicate(format: "value == %@", "Step 13")
+        let onward = NSPredicate(format: "value == %@", "Step 16")
         expectation(for: onward, evaluatedWith: element("wander-pet"))
         waitForExpectations(timeout: 8)
         screen("stayed", element("wander-pet"))
@@ -52,7 +58,7 @@ final class ForkScenarios: SmokeScenario {
         let explore = element("revisit-reeds-inlet-button")
         XCTAssertTrue(explore.waitForExistence(timeout: 5))
         explore.tap()
-        let atFork = NSPredicate(format: "value == %@", "Heron's Inlet, step 0 of 5")
+        let atFork = NSPredicate(format: "value == %@", "Heron's Inlet, step 0 of 8")
         expectation(for: atFork, evaluatedWith: element("wander-pet"))
         waitForExpectations(timeout: 8)
         screen("off-to-the-inlet", element("wander-pet"))
@@ -65,7 +71,7 @@ final class ForkScenarios: SmokeScenario {
         element("reflection-skip-button").tap()
         screen("checked-in", element("home-screen"))
         element("wander-next-label").tap()
-        let firstStep = NSPredicate(format: "value == %@", "Heron's Inlet, step 1 of 5")
+        let firstStep = NSPredicate(format: "value == %@", "Heron's Inlet, step 1 of 8")
         expectation(for: firstStep, evaluatedWith: element("wander-pet"))
         waitForExpectations(timeout: 8)
         screen("down-the-path", element("wander-pet"))

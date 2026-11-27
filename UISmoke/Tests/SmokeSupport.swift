@@ -46,7 +46,7 @@ class SmokeScenario: XCTestCase {
         case twoPets = "two-pets"
         /// `two-pets` plus the fox at dusk found and not met yet.
         case foxVisit = "fox-visit"
-        /// 13 steps, the fox met: the pet waits at the Heron's Inlet fork with 2 steps saved.
+        /// 16 steps, the fox met: the pet waits at the Heron's Inlet fork with 5 steps saved.
         case atFork = "at-fork"
         /// 15 steps with Heron's Inlet passed and open to explore.
         case forkPassed = "fork-passed"
@@ -175,6 +175,17 @@ class SmokeScenario: XCTestCase {
     }
 
     // MARK: Gestures
+
+    /// Taps `element` once it can take the tap: a sheet presented right after
+    /// another closes (the hatch, then a visitor) is on screen before it has
+    /// finished sliding in, and a tap then can be lost.
+    func tapWhenSettled(_ element: XCUIElement, timeout: TimeInterval = 5) {
+        let ready = NSPredicate(format: "exists == true AND hittable == true")
+        expectation(for: ready, evaluatedWith: element)
+        waitForExpectations(timeout: timeout)
+        Thread.sleep(forTimeInterval: 0.5)
+        element.tap()
+    }
 
     /// Taps a list row near its leading text, where a finger would land,
     /// rather than at its centre, which can fall on empty space.

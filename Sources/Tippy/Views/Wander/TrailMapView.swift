@@ -76,6 +76,9 @@ struct TrailMapView: View {
         ZStack(alignment: .topLeading) {
             backdrop(layout)
             ForEach(layout.loops) { loop in
+                HabitatScenery(loop: loop)
+            }
+            ForEach(layout.loops) { loop in
                 loop.path
                     .stroke(Color(red: 0.93, green: 0.86, blue: 0.68).opacity(0.8), style: StrokeStyle(lineWidth: 9, lineCap: .round))
                 loop.path
@@ -452,8 +455,8 @@ private struct TrailFollow: ViewModifier, Animatable {
     }
 }
 
-/// A fork's signpost, beside the fork: the side path's name and, while
-/// it's open to explore, a button to send the pet down it.
+/// A fork's signpost, beside the fork: the side path's name and habitat
+/// and, while it's open to explore, a button to send the pet down it.
 struct ForkSign: View {
     let fork: Fork
     let open: Bool
@@ -462,13 +465,19 @@ struct ForkSign: View {
     var body: some View {
         let u = PixelGrid.uiPoint
         VStack(spacing: 2 * u) {
-            Text(fork.sidePath.name)
-                .pixelFont(.body, 9)
-                .foregroundStyle(PixelPalette.parchmentLight)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .pixelPanel(.wood)
-                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) {
+                Text(fork.sidePath.name)
+                    .pixelFont(.body, 9)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text(fork.sidePath.habitat.uppercased())
+                    .pixelFont(.labelBold, 6)
+                    .opacity(0.85)
+            }
+            .foregroundStyle(PixelPalette.parchmentLight)
+            .pixelPanel(.wood)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
             if open {
                 Button("Explore", action: revisit)
                     .buttonStyle(.pixel(.teal, size: 8, fill: false))
@@ -521,7 +530,10 @@ struct ForkCard: View {
             Text("Which way?")
                 .pixelFont(.body, 13)
                 .accessibilityAddTraits(.isHeader)
-            Text("\(petName) is at the signpost for \(fork.sidePath.name). \(fork.sidePath.hint)")
+            Text("\(fork.sidePath.name.uppercased()) · \(fork.sidePath.habitat.uppercased())")
+                .pixelFont(.labelBold, 7)
+                .foregroundStyle(PixelPalette.tealDark)
+            Text("\(petName) is at the signpost. \(fork.sidePath.hint)")
                 .pixelFont(.body, 10)
                 .fixedSize(horizontal: false, vertical: true)
             if savedSteps > 0 {

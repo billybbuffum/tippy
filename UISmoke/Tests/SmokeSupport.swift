@@ -176,6 +176,17 @@ class SmokeScenario: XCTestCase {
 
     // MARK: Gestures
 
+    /// Taps `element` once it can take the tap: a sheet presented right after
+    /// another closes (the hatch, then a visitor) is on screen before it has
+    /// finished sliding in, and a tap then can be lost.
+    func tapWhenSettled(_ element: XCUIElement, timeout: TimeInterval = 5) {
+        let ready = NSPredicate(format: "exists == true AND hittable == true")
+        expectation(for: ready, evaluatedWith: element)
+        waitForExpectations(timeout: timeout)
+        Thread.sleep(forTimeInterval: 0.5)
+        element.tap()
+    }
+
     /// Taps a list row near its leading text, where a finger would land,
     /// rather than at its centre, which can fall on empty space.
     func tapRow(_ identifier: String) {

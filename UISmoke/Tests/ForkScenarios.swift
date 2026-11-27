@@ -25,8 +25,8 @@ final class ForkScenarios: SmokeScenario {
         goBack(from: "The Wander")
         screen("heron-visits", element("visitor-dialog"), timeout: 15)
         XCTAssertEqual(element("visitor-title-label").label, "A heron in the shallows")
-        element("visitor-done-button").tap()
-        XCTAssertTrue(element("visitor-dialog").waitForNonExistence(timeout: 5))
+        tapWhenSettled(element("visitor-done-button"))
+        XCTAssertTrue(element("visitor-dialog").waitForNonExistence(timeout: 10), "the visitor goes once waved off")
         screen("home-exploring", element("wander-next-label"))
         XCTAssertEqual(element("wander-next-label").label, "Exploring Heron's Inlet")
     }
